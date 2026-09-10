@@ -1,69 +1,189 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React from 'react';
+import { useGameEngine } from '../hooks/useGameEngine';
+import { SetupScreen } from '../components/game/SetupScreen';
+import { StageStatusBoard } from '../components/game/StageStatusBoard';
+import { PlayerList } from '../components/game/PlayerList';
+import { TurnActionPanel } from '../components/game/TurnActionPanel';
+import { CardRevealModal } from '../components/game/CardRevealModal';
+import { ItemInventory } from '../components/game/ItemInventory';
+import { DebugPeekModal } from '../components/game/DebugPeekModal';
+import { SaveSelectModal } from '../components/game/SaveSelectModal';
+import { RoundStartModal } from '../components/game/RoundStartModal';
+import { RoundClearModal } from '../components/game/RoundClearModal';
+import { GameOverModal } from '../components/game/GameOverModal';
+import { ActionLogDrawer } from '../components/game/ActionLogDrawer';
+import { ItemType } from '../types/game';
+
+export default function GamePage() {
+  const {
+    state,
+    startGame,
+    confirmRoundStart,
+    playCard,
+    finishCardReveal,
+    resolveCard,
+    nextRound,
+    useItem,
+    closeDebugPeek,
+    openSaveModal,
+    resetGame,
+  } = useGameEngine();
+
+  // 1. セットアップ画面
+  if (state.phase === 'SETUP' || state.players.length === 0) {
+    return <SetupScreen onStart={startGame} />;
+  }
+
+  const currentTurnPlayer = state.players[state.currentTurnPlayerIndex];
+  const targetPlayer =
+    state.targetPlayerIndex !== null ? state.players[state.targetPlayerIndex] : null;
+  const actorPlayer = state.players[state.actorPlayerIndex] || currentTurnPlayer;
+
+  // 生存している勝者
+  const winner = state.players.find((p) => !p.isGameOver);
+
+  const handleUseItem = (item: ItemType, playerIndex: number) => {
+    useItem(item, playerIndex);
+  };
+
+  const handleConfirmSave = (selectedItem: ItemType) => {
+    if (state.saveModalPlayerIndex !== null) {
+      useItem('SAVE', state.saveModalPlayerIndex, { saveItemType: selectedItem });
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="min-h-screen bg-[#08090d] text-slate-100 p-3 sm:p-6 flex flex-col items-center justify-between relative selection:bg-cyan-500 selection:text-white">
+      {/* Background Cyber Grid */}
+      <div className="fixed inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none" />
+
+      {/* Top Header */}
+      <header className="w-full max-w-2xl text-center pt-2 pb-4 relative z-10">
+        <div className="inline-block px-3 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[11px] font-mono tracking-widest text-slate-400 mb-1">
+          PSYCHOLOGICAL CARD BATTLE
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center justify-center gap-2">
+          <span>LAST</span>
+          <span className="text-red-500 underline decoration-red-500/50 decoration-4">
+            CONTINUE
+          </span>
+        </h1>
+        <p className="text-xs sm:text-sm font-medium text-slate-400 mt-0.5">
+          「次の1PLAY、誰が挑戦する？」
+        </p>
+      </header>
+
+      {/* Main Game Content Area */}
+      <div className="w-full max-w-2xl space-y-4 relative z-10 pb-10">
+        {/* 1. Stage Info Board */}
+        <StageStatusBoard
+          round={state.round}
+          stageDeck={state.stageDeck}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* 2. Player Status List */}
+        <PlayerList
+          players={state.players}
+          currentTurnPlayerIndex={state.currentTurnPlayerIndex}
+        />
+
+        {/* 3. Turn Action Panel */}
+        <TurnActionPanel
+          currentTurnPlayer={currentTurnPlayer}
+          currentTurnPlayerIndex={state.currentTurnPlayerIndex}
+          players={state.players}
+          onPlaySelf={() => playCard(state.currentTurnPlayerIndex)}
+          onPlayTarget={(targetIndex) => playCard(targetIndex)}
+          disabled={state.phase !== 'TURN_ACTION'}
+        />
+
+        {/* 4. My Items */}
+        <ItemInventory
+          players={state.players}
+          currentTurnPlayerIndex={state.currentTurnPlayerIndex}
+          onUseItem={handleUseItem}
+          onOpenSaveModal={openSaveModal}
+          disabled={state.phase !== 'TURN_ACTION'}
+        />
+
+        {/* 5. Game Logs Drawer */}
+        <ActionLogDrawer logs={state.logs} />
+
+        {/* Bottom Menu Buttons */}
+        <div className="flex justify-center pt-2">
+          <button
+            type="button"
+            onClick={resetGame}
+            className="text-xs font-mono text-slate-500 hover:text-slate-400 transition cursor-pointer"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            ↺ ゲームを最初からやり直す
+          </button>
         </div>
-      </main>
-    </div>
+      </div>
+
+      {/* ── MODALS ── */}
+
+      {/* A. Round Start (Dice Roll) Modal */}
+      {state.phase === 'ROUND_START' && (
+        <RoundStartModal
+          round={state.round}
+          diceResults={state.diceResults}
+          goodCount={state.initialRoundGoodCount}
+          badCount={state.initialRoundBadCount}
+          totalDeckCount={state.stageDeck.length}
+          onConfirm={confirmRoundStart}
+        />
+      )}
+
+      {/* B. Card Reveal Modal (Flip & Result) */}
+      {(state.phase === 'CARD_REVEALING' || state.phase === 'CARD_RESULT') &&
+        state.revealedCard &&
+        targetPlayer && (
+          <CardRevealModal
+            card={state.revealedCard}
+            actorPlayer={actorPlayer}
+            targetPlayer={targetPlayer}
+            targetPlayerIndex={state.targetPlayerIndex!}
+            glitched={state.glitchedCard}
+            continued={state.continuedCard}
+            onRevealComplete={finishCardReveal}
+            onConfirmResult={resolveCard}
+            onUseItem={handleUseItem}
+            isRevealing={state.phase === 'CARD_REVEALING'}
+          />
+        )}
+
+      {/* C. DEBUG Peek Modal */}
+      {state.debugPeekCard && (
+        <DebugPeekModal card={state.debugPeekCard} onClose={closeDebugPeek} />
+      )}
+
+      {/* D. SAVE Select Modal */}
+      {state.saveModalPlayerIndex !== null && (
+        <SaveSelectModal
+          player={state.players[state.saveModalPlayerIndex]}
+          playerIndex={state.saveModalPlayerIndex}
+          onConfirm={handleConfirmSave}
+          onCancel={() => openSaveModal(null)}
+        />
+      )}
+
+      {/* E. Round Clear Modal */}
+      {state.phase === 'ROUND_CLEAR' && (
+        <RoundClearModal round={state.round} onNextRound={nextRound} />
+      )}
+
+      {/* F. Game Over / Winner Modal */}
+      {state.phase === 'GAME_OVER_SUMMARY' && (
+        <GameOverModal
+          winner={winner}
+          players={state.players}
+          round={state.round}
+          onRestart={resetGame}
+        />
+      )}
+    </main>
   );
 }
