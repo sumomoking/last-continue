@@ -5,11 +5,10 @@ import { useGameEngine } from '../hooks/useGameEngine';
 import { useOnlineRoom } from '../hooks/useOnlineRoom';
 import { SetupScreen } from '../components/game/SetupScreen';
 import { LobbyScreen } from '../components/online/LobbyScreen';
-import { StageStatusBoard } from '../components/game/StageStatusBoard';
-import { PlayerList } from '../components/game/PlayerList';
-import { TurnActionPanel } from '../components/game/TurnActionPanel';
+import { OpponentSeats } from '../components/game/OpponentSeats';
+import { GameBoardArena } from '../components/game/GameBoardArena';
+import { PlayerHandConsole } from '../components/game/PlayerHandConsole';
 import { CardRevealModal } from '../components/game/CardRevealModal';
-import { ItemInventory } from '../components/game/ItemInventory';
 import { DebugPeekModal } from '../components/game/DebugPeekModal';
 import { SaveSelectModal } from '../components/game/SaveSelectModal';
 import { RoundStartModal } from '../components/game/RoundStartModal';
@@ -164,19 +163,20 @@ export default function GamePage() {
     );
   }
 
-  // C. ゲームプレイ画面（ローカル & オンライン共通UI）
+  // C. ゲームプレイ画面（本格TCGカードゲームアリーナ）
   return (
-    <main className="min-h-screen bg-[#08090d] text-slate-100 p-3 sm:p-6 flex flex-col items-center justify-between relative selection:bg-cyan-500 selection:text-white">
-      {/* Background Cyber Grid */}
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none" />
+    <main className="min-h-screen bg-[#050609] text-slate-100 p-2 sm:p-4 md:p-6 flex flex-col items-center justify-between relative selection:bg-cyan-500 selection:text-white">
+      {/* Background Cyber Mat Texture */}
+      <div className="fixed inset-0 bg-[linear-gradient(to_right,#1e293b12_1px,transparent_1px),linear-gradient(to_bottom,#1e293b12_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] pointer-events-none" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,#00e5ff08_0%,transparent_70%)] pointer-events-none" />
 
       {/* Online Room Info Top Bar */}
       {isOnline && onlineEngine.currentRoom && (
-        <div className="w-full max-w-2xl mb-2 flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2 text-xs relative z-20">
+        <div className="w-full max-w-4xl mb-2 flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2 text-xs relative z-20 shadow-md">
           <div className="flex items-center space-x-2 font-mono">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-slate-400">ROOM:</span>
-            <span className="text-cyan-400 font-bold">{onlineEngine.currentRoom.id}</span>
+            <span className="text-cyan-400 font-black tracking-wider text-sm">{onlineEngine.currentRoom.id}</span>
           </div>
           <button
             type="button"
@@ -188,12 +188,12 @@ export default function GamePage() {
         </div>
       )}
 
-      {/* Top Header */}
-      <header className="w-full max-w-2xl text-center pt-2 pb-3 relative z-10">
-        <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[11px] font-mono tracking-widest text-slate-400 mb-1">
-          {isOnline ? '🌐 ONLINE MULTIPLAYER' : '👥 LOCAL PASS & PLAY'}
+      {/* Arena Header */}
+      <header className="w-full max-w-4xl text-center pt-1 pb-2 relative z-10">
+        <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-900/90 border border-slate-800 text-[10px] font-mono tracking-widest text-cyan-400 mb-1">
+          {isOnline ? '🌐 ONLINE MULTIPLAYER ARENA' : '🎴 LOCAL PASS & PLAY ARENA'}
         </div>
-        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center justify-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center justify-center gap-2">
           <span>LAST</span>
           <span className="text-red-500 underline decoration-red-500/50 decoration-4">
             CONTINUE
@@ -201,50 +201,51 @@ export default function GamePage() {
         </h1>
       </header>
 
-      {/* Main Game Content Area */}
-      <div className="w-full max-w-2xl space-y-4 relative z-10 pb-10">
-        {/* 1. Stage Info Board */}
-        <StageStatusBoard
+      {/* Main Card Game Battle Mat Area */}
+      <div className="w-full max-w-4xl space-y-4 sm:space-y-5 relative z-10 pb-10">
+        {/* 1. Opponents Arena Seats (対戦相手の席 & 伏せカードファン) */}
+        <OpponentSeats
+          players={state.players}
+          currentTurnPlayerIndex={state.currentTurnPlayerIndex}
+          myPlayerId={myPlayerId}
+          isMyTurn={isMyTurn}
+          canTargetPlay={state.phase === 'TURN_ACTION'}
+          onPlayTarget={(targetIndex) => handlePlayCard(targetIndex)}
+        />
+
+        {/* 2. Central Battlefield & 3D Stage Deck (中央の3D山札 & ドローコマンド) */}
+        <GameBoardArena
           round={state.round}
           stageDeck={state.stageDeck}
-        />
-
-        {/* 2. Player Status List */}
-        <PlayerList
-          players={state.players}
-          currentTurnPlayerIndex={state.currentTurnPlayerIndex}
-        />
-
-        {/* 3. Turn Action Panel */}
-        <TurnActionPanel
+          initialGoodCount={state.initialRoundGoodCount}
+          initialBadCount={state.initialRoundBadCount}
+          diceResults={state.diceResults}
           currentTurnPlayer={currentTurnPlayer}
-          currentTurnPlayerIndex={state.currentTurnPlayerIndex}
-          players={state.players}
+          isMyTurn={isMyTurn}
+          canPlay={state.phase === 'TURN_ACTION'}
           glitchedCard={state.glitchedCard}
           continuedCard={state.continuedCard}
-          myPlayerId={myPlayerId}
           onPlaySelf={() => handlePlayCard(state.currentTurnPlayerIndex)}
-          onPlayTarget={(targetIndex) => handlePlayCard(targetIndex)}
-          disabled={state.phase !== 'TURN_ACTION' || (isOnline && !isMyTurn)}
         />
 
-        {/* 4. My Items */}
-        <ItemInventory
+        {/* 3. My Player Hand & Console (手元のTCG手札ファン & 自分のステータス) */}
+        <PlayerHandConsole
           players={state.players}
           currentTurnPlayerIndex={state.currentTurnPlayerIndex}
+          myPlayerId={myPlayerId}
+          isMyTurn={isMyTurn}
           glitchedCard={state.glitchedCard}
           continuedCard={state.continuedCard}
-          myPlayerId={myPlayerId}
+          disabled={state.phase !== 'TURN_ACTION' || (isOnline && !isMyTurn)}
           onUseItem={handleUseItem}
           onOpenSaveModal={handleOpenSaveModal}
-          disabled={state.phase !== 'TURN_ACTION' || (isOnline && !isMyTurn)}
         />
 
-        {/* 5. Game Logs Drawer */}
+        {/* 4. Action Logs Drawer */}
         <ActionLogDrawer logs={state.logs} />
 
         {/* Bottom Menu Buttons */}
-        <div className="flex justify-center gap-4 pt-2">
+        <div className="flex justify-center gap-4 pt-1">
           {isOnline ? (
             <button
               type="button"
