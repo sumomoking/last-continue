@@ -732,7 +732,7 @@ export function useOnlineRoom() {
 
   // 11. アイテム使用
   const useItem = useCallback(
-    (item: ItemType, playerIndex: number, extraData?: { saveItemType?: ItemType }) => {
+    (item: ItemType, playerIndex: number, extraData?: { saveItemType?: ItemType; resetTargetPlayerIndex?: number }) => {
       syncGameState((prev) => {
         if (prev.phase !== 'TURN_ACTION') return prev;
         const player = prev.players[playerIndex];
@@ -775,14 +775,35 @@ export function useOnlineRoom() {
             break;
           }
           case 'RESET': {
-            const redrawCount = Math.max(1, updatedItems.length);
-            let pool = [...currentItemDeck, ...updatedItems];
-            pool = shuffle(pool);
-            const { drawn, remaining } = drawItems(redrawCount, pool);
-            currentItemDeck = remaining;
-            playersList[playerIndex] = { ...player, items: drawn };
-            itemAnnouncementMsg = `手札のアイテムを全入れ替え！ 新しいアイテム（${redrawCount}枚）を引き直しました！`;
-            logItem(`🔄 ${player.name} が「RESET」を使用！ 手札を山札に戻し、${redrawCount}枚の新しいアイテムを引き直しました！`);
+            const targetIdx = extraData?.resetTargetPlayerIndex ?? playerIndex;
+            if (targetIdx === playerIndex) {
+              // 自分自身の手札入れ替え
+              const redrawCount = Math.max(1, updatedItems.length);
+              let pool = shuffle([...currentItemDeck, ...updatedItems]);
+              const { drawn, remaining } = drawItems(redrawCount, pool);
+              currentItemDeck = remaining;
+              playersList[playerIndex] = { ...player, items: drawn };
+              itemAnnouncementMsg = `自分自身の手札を全入れ替え！ 新しいアイテム（${redrawCount}枚）を引き直しました！`;
+              logItem(`🔄 ${player.name} が自分自身に「RESET」を使用！ 手札を山札に戻し、${redrawCount}枚の新しいアイテムを引き直しました！`);
+            } else {
+              // 相手の手札を強制入れ替え
+              playersList[playerIndex] = { ...player, items: updatedItems };
+              const targetOpponent = playersList[targetIdx];
+              if (targetOpponent && !targetOpponent.isGameOver) {
+                const targetCount = targetOpponent.items.length;
+                if (targetCount > 0) {
+                  let pool = shuffle([...currentItemDeck, ...targetOpponent.items]);
+                  const { drawn, remaining } = drawItems(targetCount, pool);
+                  currentItemDeck = remaining;
+                  playersList[targetIdx] = { ...targetOpponent, items: drawn };
+                  itemAnnouncementMsg = `${targetOpponent.name} の手札（${targetCount}枚）をすべて山札に戻して強制引き直し！`;
+                  logItem(`🔄 ${player.name} が ${targetOpponent.name} に「RESET」を使用！ ${targetOpponent.name} の手札（${targetCount}枚）を山札に戻し、強制的に引き直させました！`);
+                } else {
+                  itemAnnouncementMsg = `${targetOpponent.name} にRESETを使用！（手札0枚）`;
+                  logItem(`🔄 ${player.name} が ${targetOpponent.name} に「RESET」を使用しましたが、${targetOpponent.name} は手札を持っていませんでした。`);
+                }
+              }
+            }
             break;
           }
           case '1UP': {

@@ -27,6 +27,7 @@ interface TabletopBoardProps {
   onPlayTarget: (targetIndex: number) => void;
   onUseItem: (item: ItemType, playerIndex: number) => void;
   onOpenSaveModal: (playerIndex: number) => void;
+  onOpenResetModal: (playerIndex: number) => void;
 }
 
 export const TabletopBoard: React.FC<TabletopBoardProps> = ({
@@ -47,6 +48,7 @@ export const TabletopBoard: React.FC<TabletopBoardProps> = ({
   onPlayTarget,
   onUseItem,
   onOpenSaveModal,
+  onOpenResetModal,
 }) => {
   const [isTargetSelectMode, setIsTargetSelectMode] = useState(false);
   const currentTurnPlayer = players[currentTurnPlayerIndex] || players[0];
@@ -80,6 +82,8 @@ export const TabletopBoard: React.FC<TabletopBoardProps> = ({
   const handleItemClick = (item: ItemType) => {
     if (item === "SAVE") {
       onOpenSaveModal(perspectivePlayerIndex);
+    } else if (item === "RESET") {
+      onOpenResetModal(perspectivePlayerIndex);
     } else {
       onUseItem(item, perspectivePlayerIndex);
     }

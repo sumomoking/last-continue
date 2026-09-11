@@ -15,7 +15,7 @@ export const ITEM_DEFINITIONS: Record<ItemType, ItemInfo> = {
     id: 'RESET',
     name: 'RESET',
     icon: '🔄',
-    description: '手札のアイテムをすべて山札に戻し、同じ枚数だけ新しいアイテムを引き直します（手札全入れ替え）。',
+    description: '自分または相手1人を指定して使用。対象の手札のアイテムをすべて山札に戻し、同じ枚数だけ新しいアイテムを引き直させます。',
     timing: '自分のターン（PLAY前）',
     canUseInTurn: true,
   },

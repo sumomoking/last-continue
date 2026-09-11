@@ -9,6 +9,7 @@ import { TabletopBoard } from '../components/tabletop/TabletopBoard';
 import { CardRevealModal } from '../components/game/CardRevealModal';
 import { DebugPeekModal } from '../components/game/DebugPeekModal';
 import { SaveSelectModal } from '../components/game/SaveSelectModal';
+import { ResetTargetSelectModal } from '../components/game/ResetTargetSelectModal';
 import { RoundStartModal } from '../components/game/RoundStartModal';
 import { RoundClearModal } from '../components/game/RoundClearModal';
 import { GameOverModal } from '../components/game/GameOverModal';
@@ -16,12 +17,16 @@ import { ActionLogDrawer } from '../components/game/ActionLogDrawer';
 import { ItemActivationCutin } from '../components/game/ItemActivationCutin';
 import { ItemType } from '../types/game';
 import { soundManager } from '../lib/sound';
+import { GameSelectorHeader, ActiveGame } from '../components/common/GameSelectorHeader';
+import { SengokuArena } from '../components/sengoku/SengokuArena';
 
 type PlayMode = 'LOCAL' | 'ONLINE';
 
 export default function GamePage() {
+  const [activeGame, setActiveGame] = useState<ActiveGame>('SENGOKU');
   const [playMode, setPlayMode] = useState<PlayMode>('LOCAL');
   const [isMuted, setIsMuted] = useState(false);
+  const [resetModalPlayerIndex, setResetModalPlayerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setIsMuted(soundManager.isMuted());
@@ -88,6 +93,17 @@ export default function GamePage() {
     }
   };
 
+  const handleConfirmReset = (targetIndex: number) => {
+    if (resetModalPlayerIndex !== null) {
+      if (isOnline) {
+        onlineEngine.useItem('RESET', resetModalPlayerIndex, { resetTargetPlayerIndex: targetIndex });
+      } else {
+        localEngine.useItem('RESET', resetModalPlayerIndex, { resetTargetPlayerIndex: targetIndex });
+      }
+      setResetModalPlayerIndex(null);
+    }
+  };
+
   const handleConfirmRoundStart = () => {
     if (isOnline) {
       onlineEngine.confirmRoundStart();
@@ -138,39 +154,89 @@ export default function GamePage() {
 
   // ── 画面レンダリング分岐 ──
 
+  // 0. 戦国プロトコル（新ゲーム）
+  if (activeGame === 'SENGOKU') {
+    return (
+      <main className="min-h-screen bg-[#06080e] text-slate-100 p-2 sm:p-4 flex flex-col items-center">
+        <GameSelectorHeader
+          activeGame={activeGame}
+          onSelectGame={setActiveGame}
+          isMuted={isMuted}
+          onToggleMute={() => {
+            const muted = soundManager.toggleMute();
+            setIsMuted(muted);
+          }}
+        />
+        <SengokuArena />
+      </main>
+    );
+  }
+
   // A. オンラインロビー画面
   if (isOnline && !isOnlinePlaying) {
     return (
-      <LobbyScreen
-        myPlayerId={onlineEngine.myPlayerId}
-        currentRoom={onlineEngine.currentRoom}
-        isLoading={onlineEngine.isLoading}
-        errorMessage={onlineEngine.errorMessage}
-        onCreateRoom={onlineEngine.createRoom}
-        onJoinRoom={onlineEngine.joinRoom}
-        onLeaveRoom={onlineEngine.leaveRoom}
-        onStartGame={onlineEngine.startOnlineGame}
-        onBackToLocal={() => {
-          onlineEngine.leaveRoom();
-          setPlayMode('LOCAL');
-        }}
-      />
+      <main className="min-h-screen bg-[#050609] text-slate-100 p-2 sm:p-4 flex flex-col items-center">
+        <GameSelectorHeader
+          activeGame={activeGame}
+          onSelectGame={setActiveGame}
+          isMuted={isMuted}
+          onToggleMute={() => {
+            const muted = soundManager.toggleMute();
+            setIsMuted(muted);
+          }}
+        />
+        <LobbyScreen
+          myPlayerId={onlineEngine.myPlayerId}
+          currentRoom={onlineEngine.currentRoom}
+          isLoading={onlineEngine.isLoading}
+          errorMessage={onlineEngine.errorMessage}
+          onCreateRoom={onlineEngine.createRoom}
+          onJoinRoom={onlineEngine.joinRoom}
+          onLeaveRoom={onlineEngine.leaveRoom}
+          onStartGame={onlineEngine.startOnlineGame}
+          onBackToLocal={() => {
+            onlineEngine.leaveRoom();
+            setPlayMode('LOCAL');
+          }}
+        />
+      </main>
     );
   }
 
   // B. ローカルセットアップ画面
   if (!isOnline && (state.phase === 'SETUP' || state.players.length === 0)) {
     return (
-      <SetupScreen
-        onStart={localEngine.startGame}
-        onSelectOnline={() => setPlayMode('ONLINE')}
-      />
+      <main className="min-h-screen bg-[#050609] text-slate-100 p-2 sm:p-4 flex flex-col items-center">
+        <GameSelectorHeader
+          activeGame={activeGame}
+          onSelectGame={setActiveGame}
+          isMuted={isMuted}
+          onToggleMute={() => {
+            const muted = soundManager.toggleMute();
+            setIsMuted(muted);
+          }}
+        />
+        <SetupScreen
+          onStart={localEngine.startGame}
+          onSelectOnline={() => setPlayMode('ONLINE')}
+        />
+      </main>
     );
   }
 
   // C. ゲームプレイ画面（本格TCGカードゲームアリーナ）
   return (
     <main className="min-h-screen bg-[#050609] text-slate-100 p-2 sm:p-4 md:p-6 flex flex-col items-center justify-between relative selection:bg-cyan-500 selection:text-white">
+      {/* Game Switcher Header */}
+      <GameSelectorHeader
+        activeGame={activeGame}
+        onSelectGame={setActiveGame}
+        isMuted={isMuted}
+        onToggleMute={() => {
+          const muted = soundManager.toggleMute();
+          setIsMuted(muted);
+        }}
+      />
       {/* Background Cyber Mat Texture */}
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#1e293b12_1px,transparent_1px),linear-gradient(to_bottom,#1e293b12_1px,transparent_1px)] bg-[size:2.5rem_2.5rem] pointer-events-none" />
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,#00e5ff08_0%,transparent_70%)] pointer-events-none" />
@@ -250,6 +316,7 @@ export default function GamePage() {
           onPlayTarget={(targetIndex) => handlePlayCard(targetIndex)}
           onUseItem={(item, pIdx) => handleUseItem(item, pIdx)}
           onOpenSaveModal={(pIdx) => handleOpenSaveModal(pIdx)}
+          onOpenResetModal={(pIdx) => setResetModalPlayerIndex(pIdx)}
         />
 
         {/* Action Logs Drawer */}
@@ -323,6 +390,16 @@ export default function GamePage() {
           playerIndex={state.saveModalPlayerIndex}
           onConfirm={handleConfirmSave}
           onCancel={() => handleOpenSaveModal(null)}
+        />
+      )}
+
+      {/* D-2. RESET Target Select Modal */}
+      {resetModalPlayerIndex !== null && (!isOnline || (state.players[resetModalPlayerIndex]?.id === myPlayerId)) && (
+        <ResetTargetSelectModal
+          actorPlayerIndex={resetModalPlayerIndex}
+          players={state.players}
+          onConfirm={handleConfirmReset}
+          onCancel={() => setResetModalPlayerIndex(null)}
         />
       )}
 
