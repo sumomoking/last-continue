@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { CardType, GameLog, GamePhase, GameState, ItemType, Player } from '../types/game';
-import { createInitialItemDeck, shuffle } from '../constants/items';
+import { MAX_ITEM_COUNT, createInitialItemDeck, shuffle } from '../constants/items';
 
 const INITIAL_LIVES = 3;
 
@@ -188,8 +188,9 @@ export function useGameEngine() {
         actorPlayerIndex: prev.currentTurnPlayerIndex,
         stageDeck: newDeck,
         revealedCard: drawnCard,
-        glitchedCard: false,
-        continuedCard: false,
+        // 事前発動されたGLITCH/CONTINUEの状態を引き継ぐ
+        glitchedCard: prev.glitchedCard,
+        continuedCard: prev.continuedCard,
         logs: [
           {
             id: Math.random().toString(36).substring(2, 9),
@@ -221,6 +222,7 @@ export function useGameEngine() {
       const actorIdx = prev.actorPlayerIndex;
       const isSelf = targetIdx === actorIdx;
       const targetPlayer = prev.players[targetIdx];
+      const actorPlayer = prev.players[actorIdx];
       let playersList = prev.players.map((p) => ({ ...p, items: [...p.items] }));
       const currentLogs = [...prev.logs];
 
@@ -238,21 +240,28 @@ export function useGameEngine() {
       // ── A. GLITCH発動の場合 ──
       if (prev.glitchedCard) {
         addInternalLog(`👾 GLITCH発動！ ${targetPlayer.name} が引いたカードは無効化され捨てられました。`, 'item');
-        // 他人にPLAYさせた場合、手番プレイヤーのターンは必ず終了。GLITCH後、引いたプレイヤーの次へ移行。
-        // 自分でPLAYした場合も効果無効となり、次のプレイヤーへ移行。
-        nextTurnPlayerIndex = getNextAlivePlayerIndex(targetIdx, playersList);
+        // 自分で引いた場合も他人に引かせた場合も、手番プレイヤーのターンは終了して次の人へ
+        nextTurnPlayerIndex = getNextAlivePlayerIndex(actorIdx, playersList);
       }
       // ── B. CONTINUE発動の場合 (BAD時のみ) ──
       else if (prev.continuedCard && card === 'BAD') {
-        addInternalLog(`🕹️ CONTINUE発動！ ${targetPlayer.name} の残機減少は無効化され、ターンを続行します！`, 'item');
-        // CONTINUEは自分のターンを続行（他人に引かせた場合はその相手がターン続行）
-        nextTurnPlayerIndex = targetIdx;
+        if (isSelf) {
+          addInternalLog(`🕹️ CONTINUE発動！ ${targetPlayer.name} の残機減少は無効化され、ターンを続行します！`, 'item');
+          nextTurnPlayerIndex = actorIdx;
+        } else {
+          addInternalLog(`🕹️ CONTINUE発動！ ${targetPlayer.name} の残機減少は無効化されました。`, 'item');
+          nextTurnPlayerIndex = getNextAlivePlayerIndex(actorIdx, playersList);
+        }
       }
       // ── C. 通常の GOOD STAGE ──
       else if (card === 'GOOD') {
-        addInternalLog(`🟦 GOOD STAGE！ ${targetPlayer.name} のターンが継続します！`, 'good');
-        // GOOD STAGEを引いたプレイヤーのターンが続く（他人に引かせた場合もその相手のターンになる）
-        nextTurnPlayerIndex = targetIdx;
+        if (isSelf) {
+          addInternalLog(`🟦 GOOD STAGE！ ${targetPlayer.name} のターンが継続します！`, 'good');
+          nextTurnPlayerIndex = actorIdx;
+        } else {
+          addInternalLog(`🟦 GOOD STAGE！ ${targetPlayer.name} はセーフ！ ${actorPlayer.name} のターンが終了しました。`, 'good');
+          nextTurnPlayerIndex = getNextAlivePlayerIndex(actorIdx, playersList);
+        }
       }
       // ── D. 通常の BAD STAGE ──
       else {
@@ -263,11 +272,13 @@ export function useGameEngine() {
           // 残機0 -> SAVE発動チェック
           if (targetPlayer.savedItem) {
             const restoredItem = targetPlayer.savedItem;
+            const currentHand = playersList[targetIdx].items;
+            const newHand = currentHand.length < MAX_ITEM_COUNT ? [...currentHand, restoredItem] : currentHand;
             playersList[targetIdx] = {
               ...playersList[targetIdx],
               lives: 1,
               savedItem: null,
-              items: [...playersList[targetIdx].items, restoredItem],
+              items: newHand,
             };
             addInternalLog(`💾 SAVE発動！ ${targetPlayer.name} は残機 1 で復活し、セットされていた「${restoredItem}」を手札に戻しました！`, 'item');
           } else {
@@ -285,8 +296,8 @@ export function useGameEngine() {
           };
         }
 
-        // 次のプレイヤーにターン移行（引いたプレイヤーの次の生存者）
-        nextTurnPlayerIndex = getNextAlivePlayerIndex(targetIdx, playersList);
+        // 手番プレイヤー（actorIdx）のターンが終了し、本来の次の生存プレイヤーへ
+        nextTurnPlayerIndex = getNextAlivePlayerIndex(actorIdx, playersList);
       }
 
       // 勝者判定チェック（生存者1人）
@@ -301,6 +312,8 @@ export function useGameEngine() {
           players: playersList,
           phase: 'GAME_OVER_SUMMARY',
           revealedCard: null,
+          glitchedCard: false,
+          continuedCard: false,
           targetPlayerIndex: null,
           logs: currentLogs,
         };
@@ -315,6 +328,8 @@ export function useGameEngine() {
           phase: 'ROUND_CLEAR',
           currentTurnPlayerIndex: nextTurnPlayerIndex,
           revealedCard: null,
+          glitchedCard: false,
+          continuedCard: false,
           targetPlayerIndex: null,
           logs: currentLogs,
         };
@@ -327,6 +342,8 @@ export function useGameEngine() {
         phase: 'TURN_ACTION',
         currentTurnPlayerIndex: nextTurnPlayerIndex,
         revealedCard: null,
+        glitchedCard: false,
+        continuedCard: false,
         targetPlayerIndex: null,
         logs: currentLogs,
       };
@@ -339,14 +356,20 @@ export function useGameEngine() {
       let currentItemDeck = [...prev.itemDeck];
       const nextRoundNum = prev.round + 1;
 
-      // 生存プレイヤー全員にアイテムを2枚配布
+      // 生存プレイヤー全員にアイテムを配布（最大4個まで）
       const updatedPlayers = prev.players.map((player) => {
         if (player.isGameOver) return player;
-        const { drawn, remaining } = drawItems(2, currentItemDeck);
-        currentItemDeck = remaining;
+        const availableSlots = Math.max(0, MAX_ITEM_COUNT - player.items.length);
+        const drawCount = Math.min(2, availableSlots);
+        let newItems = [...player.items];
+        if (drawCount > 0) {
+          const { drawn, remaining } = drawItems(drawCount, currentItemDeck);
+          currentItemDeck = remaining;
+          newItems = [...newItems, ...drawn];
+        }
         return {
           ...player,
-          items: [...player.items, ...drawn],
+          items: newItems,
         };
       });
 
@@ -368,7 +391,7 @@ export function useGameEngine() {
         logs: [
           {
             id: Math.random().toString(36).substring(2, 9),
-            text: `🎲 ROUND ${nextRoundNum} 開始！ 生存者にアイテム2枚配布。ダイス: ${dice[0]} + ${dice[1]} = ${deck.length}枚 (GOOD: ${goodCount}, BAD: ${badCount})`,
+            text: `🎲 ROUND ${nextRoundNum} 開始！ 生存者にアイテム補充（最大${MAX_ITEM_COUNT}枚）。ダイス: ${dice[0]} + ${dice[1]} = ${deck.length}枚 (GOOD: ${goodCount}, BAD: ${badCount})`,
             timestamp: new Date().toLocaleTimeString('ja-JP'),
             type: 'round',
           },
@@ -380,11 +403,17 @@ export function useGameEngine() {
     });
   }, []);
 
-  // 5. アイテム使用処理
+  // 5. アイテム使用処理（カードを引く前＝TURN_ACTION時のみ使用可能）
   const useItem = useCallback((item: ItemType, playerIndex: number, extraData?: { saveItemType?: ItemType }) => {
     setState((prev) => {
+      // アイテムはカードを引く前（TURN_ACTIONフェーズ）のみ使用可能
+      if (prev.phase !== 'TURN_ACTION') return prev;
+
       const player = prev.players[playerIndex];
-      if (!player) return prev;
+      if (!player || player.isGameOver) return prev;
+
+      // 現在の手番プレイヤーのみ使用可能
+      if (playerIndex !== prev.currentTurnPlayerIndex) return prev;
 
       const itemIdx = player.items.indexOf(item);
       if (itemIdx === -1) return prev;
@@ -431,7 +460,7 @@ export function useGameEngine() {
           break;
         }
         case 'SAVE': {
-          if (extraData?.saveItemType) {
+          if (player.lives === 1 && !player.savedItem && extraData?.saveItemType) {
             const setToSave = extraData.saveItemType;
             const saveItemIdx = updatedItems.indexOf(setToSave);
             if (saveItemIdx !== -1) {
@@ -449,13 +478,13 @@ export function useGameEngine() {
         case 'CONTINUE': {
           continued = true;
           playersList[playerIndex] = { ...player, items: updatedItems };
-          logItem(`🕹️ ${player.name} が「CONTINUE」を発動！ BADの効果を無効化します！`);
+          logItem(`🕹️ ${player.name} が「CONTINUE」を発動！ このターン、BADを引いても無効化してターン継続します！`);
           break;
         }
         case 'GLITCH': {
           glitched = true;
           playersList[playerIndex] = { ...player, items: updatedItems };
-          logItem(`👾 ${player.name} が「GLITCH」を発動！ カード効果を無効化して捨てます！`);
+          logItem(`👾 ${player.name} が「GLITCH」を発動！ 次に引くカードを無効化して破棄します！`);
           break;
         }
       }
@@ -478,9 +507,18 @@ export function useGameEngine() {
     setState((prev) => ({ ...prev, debugPeekCard: null }));
   }, []);
 
-  // SAVE選択モーダルを開く/閉じる
+  // SAVE選択モーダルを開く/閉じる（残機1の時のみ開ける）
   const openSaveModal = useCallback((playerIndex: number | null) => {
-    setState((prev) => ({ ...prev, saveModalPlayerIndex: playerIndex }));
+    setState((prev) => {
+      if (playerIndex !== null) {
+        if (prev.phase !== 'TURN_ACTION') return prev;
+        const player = prev.players[playerIndex];
+        if (!player || player.lives !== 1 || player.savedItem || player.items.length <= 1) {
+          return prev;
+        }
+      }
+      return { ...prev, saveModalPlayerIndex: playerIndex };
+    });
   }, []);
 
   // ゲームリセット（セットアップ画面へ戻る）

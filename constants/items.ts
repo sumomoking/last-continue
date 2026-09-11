@@ -1,5 +1,7 @@
 import { ItemInfo, ItemType } from '../types/game';
 
+export const MAX_ITEM_COUNT = 4;
+
 export const ITEM_DEFINITIONS: Record<ItemType, ItemInfo> = {
   DEBUG: {
     id: 'DEBUG',
@@ -21,8 +23,8 @@ export const ITEM_DEFINITIONS: Record<ItemType, ItemInfo> = {
     id: 'SAVE',
     name: 'SAVE',
     icon: '💾',
-    description: '手札から1枚セット。GAME OVER時にそのカードを手札に戻し残機1で復活します。',
-    timing: '自分のターン（PLAY前）',
+    description: '残り残機1の時のみ使用可能。手札から1枚セットし、GAME OVER時にそのカードを手札に戻して残機1で復活します。',
+    timing: '残機1のターン（PLAY前）',
     canUseInTurn: true,
   },
   '1UP': {
@@ -30,24 +32,24 @@ export const ITEM_DEFINITIONS: Record<ItemType, ItemInfo> = {
     name: '1UP',
     icon: '❤️',
     description: '自分の残機を1増やします（最大3まで）。',
-    timing: '自分のターン（いつでも）',
+    timing: '自分のターン（PLAY前）',
     canUseInTurn: true,
   },
   CONTINUE: {
     id: 'CONTINUE',
     name: 'CONTINUE',
     icon: '🕹️',
-    description: 'BAD STAGEを引いた時に使用。残機減少を無効にし、ターンを続行します。',
-    timing: '自分がBADを引いた直後',
-    canUseInTurn: false,
+    description: 'カードを引く前に使用。このターンでBAD STAGEを引いても残機減少を無効化し、ターンを継続します。',
+    timing: '自分のターン（PLAY前）',
+    canUseInTurn: true,
   },
   GLITCH: {
     id: 'GLITCH',
     name: 'GLITCH',
     icon: '👾',
-    description: 'ステージカードを引いた直後に使用。引いたカードの効果を無効化して捨てます。',
-    timing: 'ステージカードめくり直後',
-    canUseInTurn: false,
+    description: 'カードを引く前に使用。このターンで引くステージカードの効果を無効化して破棄します。',
+    timing: '自分のターン（PLAY前）',
+    canUseInTurn: true,
   },
 };
 

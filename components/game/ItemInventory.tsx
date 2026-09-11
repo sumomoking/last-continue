@@ -2,13 +2,15 @@
 
 import React, { useState } from 'react';
 import { ItemType, Player } from '../../types/game';
-import { ITEM_DEFINITIONS } from '../../constants/items';
+import { ITEM_DEFINITIONS, MAX_ITEM_COUNT } from '../../constants/items';
 
 interface ItemInventoryProps {
   players: Player[];
   currentTurnPlayerIndex: number;
   onUseItem: (item: ItemType, playerIndex: number) => void;
   onOpenSaveModal: (playerIndex: number) => void;
+  glitchedCard?: boolean;
+  continuedCard?: boolean;
   disabled: boolean;
 }
 
@@ -17,6 +19,8 @@ export const ItemInventory: React.FC<ItemInventoryProps> = ({
   currentTurnPlayerIndex,
   onUseItem,
   onOpenSaveModal,
+  glitchedCard = false,
+  continuedCard = false,
   disabled,
 }) => {
   // 表示対象プレイヤー（デフォルトは現在の手番プレイヤー）
@@ -38,7 +42,7 @@ export const ItemInventory: React.FC<ItemInventoryProps> = ({
 
     if (item === 'SAVE') {
       onOpenSaveModal(viewingPlayerIndex);
-    } else if (item === 'DEBUG' || item === 'RESET' || item === '1UP') {
+    } else {
       onUseItem(item, viewingPlayerIndex);
     }
   };
@@ -49,8 +53,11 @@ export const ItemInventory: React.FC<ItemInventoryProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-4">
         <div className="flex items-center space-x-2">
           <span className="text-base">🎒</span>
-          <h3 className="text-sm font-black uppercase tracking-wider text-white">
-            MY ITEMS ({player.name})
+          <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-1.5">
+            <span>MY ITEMS ({player.name})</span>
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-normal">
+              {player.items.length}/{MAX_ITEM_COUNT}枚 {player.items.length >= MAX_ITEM_COUNT ? '⚡MAX' : ''}
+            </span>
           </h3>
         </div>
 
@@ -65,13 +72,14 @@ export const ItemInventory: React.FC<ItemInventoryProps> = ({
                 key={p.id}
                 type="button"
                 onClick={() => setSelectedPlayerIndex(idx)}
-                className={`px-2.5 py-1 text-xs rounded-lg font-bold border transition cursor-pointer ${
+                className={`px-2.5 py-1 text-xs rounded-lg font-bold border transition cursor-pointer flex items-center gap-1 ${
                   isSelected
                     ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-sm'
                     : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200'
                 }`}
               >
-                {p.name} ({p.items.length})
+                <span>{p.name}</span>
+                <span className="text-[10px] opacity-80">({p.items.length}/{MAX_ITEM_COUNT})</span>
               </button>
             );
           })}
@@ -87,10 +95,38 @@ export const ItemInventory: React.FC<ItemInventoryProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {player.items.map((item, index) => {
             const info = ITEM_DEFINITIONS[item];
-            const canUseNow =
-              isCurrentTurnPlayer &&
-              !disabled &&
-              (item === 'DEBUG' || item === 'RESET' || item === 'SAVE' || item === '1UP');
+
+            // 使用可能条件の判定
+            let canUseNow = isCurrentTurnPlayer && !disabled;
+            let disabledReason = '';
+
+            if (!isCurrentTurnPlayer) {
+              canUseNow = false;
+              disabledReason = '手番でのみ使用可能';
+            } else if (disabled) {
+              canUseNow = false;
+              disabledReason = 'カード引く前のみ使用可能';
+            } else if (item === '1UP' && player.lives >= 3) {
+              canUseNow = false;
+              disabledReason = '残機は最大(3)です';
+            } else if (item === 'SAVE') {
+              if (player.lives !== 1) {
+                canUseNow = false;
+                disabledReason = '残機1の時のみ使用可能';
+              } else if (player.savedItem) {
+                canUseNow = false;
+                disabledReason = 'すでにSAVEセット中';
+              } else if (player.items.length <= 1) {
+                canUseNow = false;
+                disabledReason = 'セットする別のカードが必要';
+              }
+            } else if (item === 'GLITCH' && glitchedCard) {
+              canUseNow = false;
+              disabledReason = 'GLITCH発動中';
+            } else if (item === 'CONTINUE' && continuedCard) {
+              canUseNow = false;
+              disabledReason = 'CONTINUE発動中';
+            }
 
             return (
               <div
@@ -98,7 +134,7 @@ export const ItemInventory: React.FC<ItemInventoryProps> = ({
                 className={`rounded-xl p-3 border flex flex-col justify-between transition-all ${
                   canUseNow
                     ? 'bg-slate-800/80 border-slate-700 hover:border-cyan-400/80 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)]'
-                    : 'bg-slate-950/50 border-slate-900/80 opacity-80'
+                    : 'bg-slate-950/50 border-slate-900/80 opacity-75'
                 }`}
               >
                 <div>
@@ -128,11 +164,7 @@ export const ItemInventory: React.FC<ItemInventoryProps> = ({
                   </button>
                 ) : (
                   <div className="text-center py-1 text-[11px] font-mono text-slate-500 bg-slate-900/60 rounded border border-slate-800">
-                    {item === 'CONTINUE' || item === 'GLITCH'
-                      ? '⚡ 引いた瞬間に使用'
-                      : !isCurrentTurnPlayer
-                      ? '手番でのみ使用可'
-                      : '現在使用不可'}
+                    {disabledReason || '現在使用不可'}
                   </div>
                 )}
               </div>

@@ -13,7 +13,6 @@ interface CardRevealModalProps {
   continued: boolean;
   onRevealComplete: () => void;
   onConfirmResult: () => void;
-  onUseItem: (item: ItemType, playerIndex: number) => void;
   isRevealing: boolean;
 }
 
@@ -26,7 +25,6 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
   continued,
   onRevealComplete,
   onConfirmResult,
-  onUseItem,
   isRevealing,
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -40,10 +38,6 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
       onRevealComplete();
     }, 600);
   };
-
-  // 引いたプレイヤーの手札にある割り込み可能アイテム
-  const hasGlitch = targetPlayer.items.includes('GLITCH');
-  const hasContinue = targetPlayer.items.includes('CONTINUE') && card === 'BAD';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
@@ -112,21 +106,25 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
               {/* Status override indicator */}
               {glitched && (
                 <div className="mt-2 px-3 py-1 bg-purple-950/80 border border-purple-500 text-purple-300 font-bold text-xs rounded-lg animate-bounce">
-                  👾 GLITCH 無効化中
+                  👾 GLITCH 無効化発動中！
                 </div>
               )}
               {continued && (
                 <div className="mt-2 px-3 py-1 bg-yellow-950/80 border border-yellow-400 text-yellow-300 font-bold text-xs rounded-lg animate-bounce">
-                  🕹️ CONTINUE 復活発動
+                  🕹️ CONTINUE 残機保護発動！
                 </div>
               )}
 
               {/* Card Effect Description */}
               {!glitched && !continued && (
                 <p className="text-xs text-slate-300 mt-2">
-                  {card === 'GOOD'
-                    ? '🎉 ターン継続！次のPLAYもあなたの番です。'
-                    : '💀 残機が1減少し、次のプレイヤーへターンが移ります。'}
+                  {isSelf
+                    ? card === 'GOOD'
+                      ? '🎉 ターン継続！次のPLAYもあなたの番です。'
+                      : '💀 残機が1減少し、次のプレイヤーへターンが移ります。'
+                    : card === 'GOOD'
+                    ? `✨ ${targetPlayer.name} はセーフ！次のプレイヤーへターンが移ります。`
+                    : `💀 ${targetPlayer.name} の残機が1減少し、次のプレイヤーへターンが移ります。`}
                 </p>
               )}
             </div>
@@ -136,41 +134,12 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
         {/* Action Panel after Reveal */}
         {isFlipped && !isRevealing && (
           <div className="w-full space-y-3 mt-2 animate-fade-in">
-            {/* Quick Item Interrupts (GLITCH / CONTINUE) */}
-            {(hasGlitch || hasContinue) && !glitched && !continued && (
-              <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
-                <div className="text-[11px] font-bold text-slate-400 mb-2 flex items-center justify-center gap-1">
-                  <span>⚡</span> 割り込みアイテム使用可能（{targetPlayer.name}）
-                </div>
-                <div className="flex gap-2 justify-center">
-                  {hasGlitch && (
-                    <button
-                      type="button"
-                      onClick={() => onUseItem('GLITCH', targetPlayerIndex)}
-                      className="flex-1 py-2 px-3 bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500 text-purple-200 text-xs font-bold rounded-lg transition"
-                    >
-                      👾 GLITCH (カード無効化)
-                    </button>
-                  )}
-                  {hasContinue && (
-                    <button
-                      type="button"
-                      onClick={() => onUseItem('CONTINUE', targetPlayerIndex)}
-                      className="flex-1 py-2 px-3 bg-yellow-600/30 hover:bg-yellow-600/50 border border-yellow-400 text-yellow-200 text-xs font-bold rounded-lg transition"
-                    >
-                      🕹️ CONTINUE (残機保護＆継続)
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Confirm & Proceed Button */}
             <button
               type="button"
               onClick={onConfirmResult}
               className={`w-full py-3.5 px-6 font-black text-base rounded-xl transition duration-150 shadow-lg cursor-pointer ${
-                card === 'GOOD' || continued
+                card === 'GOOD' || continued || glitched
                   ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-900/50'
                   : 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-900/50'
               }`}

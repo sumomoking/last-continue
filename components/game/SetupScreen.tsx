@@ -106,9 +106,10 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
             <div className="font-semibold text-slate-300 flex items-center gap-1.5">
               <span>📋</span> ルール概要
             </div>
-            <p>• 全員初期残機 <span className="text-red-400">❤️❤️❤️</span>、アイテム各2枚配られます。</p>
+            <p>• 全員初期残機 <span className="text-red-400">❤️❤️❤️</span>、アイテム各2枚配布（所持上限: 最大4枚）。</p>
             <p>• 🟦 GOOD STAGEを引けば自分のターンが継続！</p>
             <p>• 🟥 BAD STAGEを引くと残機-1で次のプレイヤーへ。</p>
+            <p>• 🎒 アイテムの使用は **「カードを引く前（手番中）」** のみ可能！</p>
             <p>• 心理戦：自分で引くか、他人に引かせるかを選択。</p>
           </div>
 

@@ -30,12 +30,12 @@ export const SaveSelectModal: React.FC<SaveSelectModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
       <div className="w-full max-w-md bg-slate-900 border border-emerald-500/50 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-emerald-950/60 text-center relative">
         <div className="inline-block px-3 py-1 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-xs font-mono font-bold text-emerald-300 mb-3">
-          💾 SAVE ITEM
+          💾 SAVE ITEM（残機1専用）
         </div>
         <h3 className="text-xl font-black text-white mb-2">保管するアイテムを選択</h3>
         <p className="text-xs text-slate-400 mb-6 leading-relaxed">
           SAVEの下にセットするアイテムを1枚選んでください。<br />
-          GAME OVERになった瞬間にそのアイテムが手札に戻り、<strong>残機1で復活</strong>します。
+          次でGAME OVER（残機0）になった瞬間にそのアイテムが手札に戻り、<strong>残機1で復活</strong>します。
         </p>
 
         {availableItems.length === 0 ? (

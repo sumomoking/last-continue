@@ -7,6 +7,8 @@ interface TurnActionPanelProps {
   currentTurnPlayer: Player;
   currentTurnPlayerIndex: number;
   players: Player[];
+  glitchedCard?: boolean;
+  continuedCard?: boolean;
   onPlaySelf: () => void;
   onPlayTarget: (targetIndex: number) => void;
   disabled: boolean;
@@ -16,6 +18,8 @@ export const TurnActionPanel: React.FC<TurnActionPanelProps> = ({
   currentTurnPlayer,
   currentTurnPlayerIndex,
   players,
+  glitchedCard = false,
+  continuedCard = false,
   onPlaySelf,
   onPlayTarget,
   disabled,
@@ -28,7 +32,7 @@ export const TurnActionPanel: React.FC<TurnActionPanelProps> = ({
   return (
     <div className="w-full bg-slate-900/90 border border-slate-800 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-2xl relative overflow-hidden">
       {/* Current Turn Banner */}
-      <div className="text-center mb-5">
+      <div className="text-center mb-4">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 text-xs sm:text-sm font-bold tracking-wide mb-1">
           <span className="w-2 h-2 rounded-full bg-yellow-400 animate-ping" />
           現在のターン：
@@ -37,6 +41,22 @@ export const TurnActionPanel: React.FC<TurnActionPanelProps> = ({
         <p className="text-xs text-slate-400 mt-1">
           自分で挑戦するか、他のプレイヤーに押し付けるかを選択してください。
         </p>
+
+        {/* Active Item Buff Badges */}
+        {(glitchedCard || continuedCard) && (
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-2.5 animate-fade-in">
+            {glitchedCard && (
+              <span className="px-3 py-1 bg-purple-950/80 border border-purple-500/70 text-purple-300 font-bold text-xs rounded-full flex items-center gap-1.5 shadow-sm">
+                <span className="animate-pulse">👾</span> GLITCH 発動中（次のカード無効化）
+              </span>
+            )}
+            {continuedCard && (
+              <span className="px-3 py-1 bg-yellow-950/80 border border-yellow-500/70 text-yellow-300 font-bold text-xs rounded-full flex items-center gap-1.5 shadow-sm">
+                <span className="animate-pulse">🕹️</span> CONTINUE 発動中（BAD無効化＆継続）
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Main Action Buttons */}

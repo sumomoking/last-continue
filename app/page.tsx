@@ -94,6 +94,8 @@ export default function GamePage() {
           currentTurnPlayer={currentTurnPlayer}
           currentTurnPlayerIndex={state.currentTurnPlayerIndex}
           players={state.players}
+          glitchedCard={state.glitchedCard}
+          continuedCard={state.continuedCard}
           onPlaySelf={() => playCard(state.currentTurnPlayerIndex)}
           onPlayTarget={(targetIndex) => playCard(targetIndex)}
           disabled={state.phase !== 'TURN_ACTION'}
@@ -103,6 +105,8 @@ export default function GamePage() {
         <ItemInventory
           players={state.players}
           currentTurnPlayerIndex={state.currentTurnPlayerIndex}
+          glitchedCard={state.glitchedCard}
+          continuedCard={state.continuedCard}
           onUseItem={handleUseItem}
           onOpenSaveModal={openSaveModal}
           disabled={state.phase !== 'TURN_ACTION'}
@@ -150,7 +154,6 @@ export default function GamePage() {
             continued={state.continuedCard}
             onRevealComplete={finishCardReveal}
             onConfirmResult={resolveCard}
-            onUseItem={handleUseItem}
             isRevealing={state.phase === 'CARD_REVEALING'}
           />
         )}

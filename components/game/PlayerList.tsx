@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Player } from '../../types/game';
+import { MAX_ITEM_COUNT } from '../../constants/items';
 
 interface PlayerListProps {
   players: Player[];
@@ -83,8 +84,12 @@ export const PlayerList: React.FC<PlayerListProps> = ({ players, currentTurnPlay
               <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/60 pt-1.5">
                 <div className="flex items-center gap-1">
                   <span>🎒</span>
-                  <span className="font-mono text-slate-300 font-semibold">{player.items.length}</span>
-                  <span className="text-[10px]">枚</span>
+                  <span className="font-mono text-slate-300 font-semibold">{player.items.length}/{MAX_ITEM_COUNT}</span>
+                  {player.items.length >= MAX_ITEM_COUNT && (
+                    <span className="text-[9px] font-bold text-amber-400 bg-amber-950/60 px-1 rounded border border-amber-500/40">
+                      MAX
+                    </span>
+                  )}
                 </div>
 
                 {player.savedItem && (
