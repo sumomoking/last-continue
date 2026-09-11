@@ -9,6 +9,7 @@ interface ItemCardViewProps {
   canUse: boolean;
   disabledReason?: string;
   onUse?: () => void;
+  onInspect?: () => void;
   isCompact?: boolean;
 }
 
@@ -40,7 +41,7 @@ const ITEM_THEMES: Record<
     bgGradient: 'from-sky-950/90 via-slate-900/95 to-slate-950',
     badgeBg: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
     accentColor: 'text-sky-400',
-    tagText: 'SHUFFLE',
+    tagText: 'REDRAW',
     symbol: '🔄',
   },
   SAVE: {
@@ -86,6 +87,7 @@ export const ItemCardView: React.FC<ItemCardViewProps> = ({
   canUse,
   disabledReason,
   onUse,
+  onInspect,
   isCompact = false,
 }) => {
   const info = ITEM_DEFINITIONS[item];
@@ -93,9 +95,11 @@ export const ItemCardView: React.FC<ItemCardViewProps> = ({
 
   return (
     <div
-      className={`group relative select-none rounded-2xl border-2 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-xl ${
+      onClick={() => onInspect?.()}
+      title="クリックしてカード詳細を表示"
+      className={`group relative select-none rounded-2xl border-2 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-xl cursor-pointer ${
         theme.border
-      } ${canUse ? `${theme.glow} hover-lift-card cursor-pointer` : 'opacity-75 grayscale-[25%]'} ${
+      } ${theme.glow} hover-lift-card ${!canUse ? 'opacity-85' : ''} ${
         isCompact ? 'w-32 sm:w-36 h-48 sm:h-52 p-2.5' : 'w-full max-w-[210px] h-[270px] p-3'
       } bg-gradient-to-b ${theme.bgGradient}`}
     >

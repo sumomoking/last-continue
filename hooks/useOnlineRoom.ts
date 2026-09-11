@@ -126,11 +126,23 @@ export function useOnlineRoom() {
       (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.data() as OnlineRoom;
+          if (data.status === 'ABORTED') {
+            // ゲーム進行中に誰かが退出したため強制終了
+            setErrorMessage(
+              data.terminatedReason || 'プレイヤーがルームを退出したため、ゲームが強制終了されました。'
+            );
+            if (unsubscribeRef.current) {
+              unsubscribeRef.current();
+              unsubscribeRef.current = null;
+            }
+            setCurrentRoom(null);
+            return;
+          }
           setCurrentRoom(data);
           setErrorMessage(null);
         } else {
           setCurrentRoom(null);
-          setErrorMessage('ルームが存在しないか削除されました。');
+          setErrorMessage('ルームが解散または削除されました。');
         }
       },
       (err) => {
@@ -221,7 +233,6 @@ export function useOnlineRoom() {
         const roomData = snapshot.data() as OnlineRoom;
 
         if (roomData.status !== 'WAITING') {
-          // すでに進行中の場合、自分がすでにメンバーに含まれているか確認
           const isAlreadyMember = roomData.players.some((p) => p.id === playerId);
           if (!isAlreadyMember) {
             setIsLoading(false);
@@ -230,18 +241,15 @@ export function useOnlineRoom() {
           }
         }
 
-        // 既存メンバーかチェック
         const existingPlayerIdx = roomData.players.findIndex((p) => p.id === playerId);
         let updatedPlayers = [...roomData.players];
 
         if (existingPlayerIdx !== -1) {
-          // 名前を更新
           updatedPlayers[existingPlayerIdx] = {
             ...updatedPlayers[existingPlayerIdx],
             name: playerName.trim() || updatedPlayers[existingPlayerIdx].name,
           };
         } else {
-          // 人数満員チェック
           if (roomData.players.length >= roomData.maxPlayers) {
             setIsLoading(false);
             setErrorMessage(`このルームは満員です（最大 ${roomData.maxPlayers} 人）。`);
@@ -275,12 +283,14 @@ export function useOnlineRoom() {
     [subscribeToRoom]
   );
 
-  // 3. ルームから退出
+  // 3. ルームから退出（ゲーム進行中の場合はゲーム強制終了）
   const leaveRoom = useCallback(async () => {
     if (!currentRoom) return;
 
     const { db } = getFirebaseInstance();
     const playerId = getMyPlayerId();
+    const leavingPlayer = currentRoom.players.find((p) => p.id === playerId);
+    const leavingName = leavingPlayer?.name || 'プレイヤー';
 
     if (db) {
       try {
@@ -290,8 +300,16 @@ export function useOnlineRoom() {
         if (remainingPlayers.length === 0) {
           // 誰もいなくなったら削除
           await deleteDoc(roomRef);
+        } else if (currentRoom.status === 'PLAYING') {
+          // ゲーム進行中に誰かが抜けたら、全プレイヤーに対してゲームを強制終了
+          await updateDoc(roomRef, {
+            status: 'ABORTED',
+            terminatedReason: `プレイヤー「${leavingName}」がルームを退出したため、ゲームが強制終了されました。`,
+            players: remainingPlayers,
+            updatedAt: Date.now(),
+          });
         } else {
-          // ホストが抜けたら次の人に引き継ぎ
+          // ロビー待機中の退出
           let nextHostId = currentRoom.hostId;
           if (currentRoom.hostId === playerId) {
             nextHostId = remainingPlayers[0].id;
@@ -315,17 +333,26 @@ export function useOnlineRoom() {
     setCurrentRoom(null);
   }, [currentRoom]);
 
-  // 4. ゲームステートの直接更新（Firestoreに反映）
+  // 4. ゲームステートの直接更新（Firestoreの最新データを取得してアトミックに適用）
   const syncGameState = useCallback(
     async (updater: (prev: GameState) => GameState) => {
       if (!currentRoom || !currentRoom.gameState) return;
       const { db } = getFirebaseInstance();
       if (!db) return;
 
-      const newGameState = updater(currentRoom.gameState);
-
       try {
         const roomRef = doc(db, 'rooms', currentRoom.id);
+        const snapshot = await getDoc(roomRef);
+        if (!snapshot.exists()) return;
+        const roomData = snapshot.data() as OnlineRoom;
+        if (!roomData.gameState) return;
+
+        const latestState = roomData.gameState;
+        const newGameState = updater(latestState);
+
+        // 状態に変更がない（フェーズ不一致等でガードされた）場合は更新をスキップ
+        if (newGameState === latestState) return;
+
         await updateDoc(roomRef, {
           gameState: newGameState,
           updatedAt: Date.now(),
@@ -412,18 +439,22 @@ export function useOnlineRoom() {
     }
   }, [currentRoom, myPlayerId]);
 
-  // 6. ラウンド開始確認
+  // 6. ラウンド開始確認（重複防止ガード付き）
   const confirmRoundStart = useCallback(() => {
-    syncGameState((prev) => ({
-      ...prev,
-      phase: 'TURN_ACTION',
-    }));
+    syncGameState((prev) => {
+      if (prev.phase !== 'ROUND_START') return prev;
+      return {
+        ...prev,
+        phase: 'TURN_ACTION',
+      };
+    });
   }, [syncGameState]);
 
   // 7. カードを引くアクション（PLAY）
   const playCard = useCallback(
     (targetIndex: number) => {
       syncGameState((prev) => {
+        if (prev.phase !== 'TURN_ACTION') return prev;
         if (prev.stageDeck.length === 0) return prev;
 
         const actor = prev.players[prev.currentTurnPlayerIndex];
@@ -461,17 +492,21 @@ export function useOnlineRoom() {
     [syncGameState]
   );
 
-  // 8. カードめくり完了
+  // 8. カードめくり完了（重複防止ガード付き）
   const finishCardReveal = useCallback(() => {
-    syncGameState((prev) => ({
-      ...prev,
-      phase: 'CARD_RESULT',
-    }));
+    syncGameState((prev) => {
+      if (prev.phase !== 'CARD_REVEALING') return prev;
+      return {
+        ...prev,
+        phase: 'CARD_RESULT',
+      };
+    });
   }, [syncGameState]);
 
-  // 9. 結果確定
+  // 9. 結果確定（重複防止ガード付き）
   const resolveCard = useCallback(() => {
     syncGameState((prev) => {
+      if (prev.phase !== 'CARD_RESULT') return prev;
       if (!prev.revealedCard || prev.targetPlayerIndex === null) return prev;
 
       const card = prev.revealedCard;
@@ -603,9 +638,11 @@ export function useOnlineRoom() {
     });
   }, [syncGameState]);
 
-  // 10. 次ラウンドへ
+  // 10. 次ラウンドへ（重複防止ガード付き）
   const nextRound = useCallback(() => {
     syncGameState((prev) => {
+      if (prev.phase !== 'ROUND_CLEAR') return prev;
+
       let currentItemDeck = [...prev.itemDeck];
       const nextRoundNum = prev.round + 1;
 
@@ -686,25 +723,35 @@ export function useOnlineRoom() {
           });
         };
 
+        let currentItemDeck = [...prev.itemDeck];
+
+        let itemAnnouncementMsg = '';
         switch (item) {
           case 'DEBUG': {
             if (newDeck.length > 0) {
               debugPeek = newDeck[0];
               playersList[playerIndex] = { ...player, items: updatedItems };
+              itemAnnouncementMsg = '一番上のステージカードを覗き見中...';
               logItem(`🔍 ${player.name} が「DEBUG」を使用しました。一番上のカードを確認中...`);
             }
             break;
           }
           case 'RESET': {
-            newDeck = shuffle(newDeck);
-            playersList[playerIndex] = { ...player, items: updatedItems };
-            logItem(`🔄 ${player.name} が「RESET」を使用しました。残りのステージデッキ（${newDeck.length}枚）をシャッフルしました！`);
+            const redrawCount = Math.max(1, updatedItems.length);
+            let pool = [...currentItemDeck, ...updatedItems];
+            pool = shuffle(pool);
+            const { drawn, remaining } = drawItems(redrawCount, pool);
+            currentItemDeck = remaining;
+            playersList[playerIndex] = { ...player, items: drawn };
+            itemAnnouncementMsg = `手札のアイテムを全入れ替え！ 新しいアイテム（${redrawCount}枚）を引き直しました！`;
+            logItem(`🔄 ${player.name} が「RESET」を使用！ 手札を山札に戻し、${redrawCount}枚の新しいアイテムを引き直しました！`);
             break;
           }
           case '1UP': {
             const currentLives = player.lives;
             const newLives = Math.min(3, currentLives + 1);
             playersList[playerIndex] = { ...player, lives: newLives, items: updatedItems };
+            itemAnnouncementMsg = `ライフが1回復しました！（❤️ ${currentLives} ➔ ${newLives}）`;
             logItem(`❤️ ${player.name} が「1UP」を使用しました！ 残機: ${newLives}`);
             break;
           }
@@ -720,6 +767,7 @@ export function useOnlineRoom() {
                 items: updatedItems,
                 savedItem: setToSave,
               };
+              itemAnnouncementMsg = `「${setToSave}」をSAVEスロットにセット！ (ライフ0時に全回復)`;
               logItem(`💾 ${player.name} が「SAVE」を使用し、「${setToSave}」をセットしました。GAME OVER時に復活します。`);
             }
             break;
@@ -727,12 +775,14 @@ export function useOnlineRoom() {
           case 'CONTINUE': {
             continued = true;
             playersList[playerIndex] = { ...player, items: updatedItems };
+            itemAnnouncementMsg = 'BADカードの残機減少を無効化するバリアを展開！';
             logItem(`🕹️ ${player.name} が「CONTINUE」を発動！ このターン、BADを引いても無効化してターン継続します！`);
             break;
           }
           case 'GLITCH': {
             glitched = true;
             playersList[playerIndex] = { ...player, items: updatedItems };
+            itemAnnouncementMsg = '次に引くカードの効果を無効化して破棄するグリッチを展開！';
             logItem(`👾 ${player.name} が「GLITCH」を発動！ 次に引くカードを無効化して破棄します！`);
             break;
           }
@@ -742,11 +792,20 @@ export function useOnlineRoom() {
           ...prev,
           players: playersList,
           stageDeck: newDeck,
+          itemDeck: currentItemDeck,
           debugPeekCard: debugPeek,
           glitchedCard: glitched,
           continuedCard: continued,
           logs,
           saveModalPlayerIndex: null,
+          lastUsedItemAnnouncement: {
+            id: Math.random().toString(36).substring(2, 9),
+            playerIndex,
+            playerName: player.name,
+            item,
+            message: itemAnnouncementMsg,
+            timestamp: Date.now(),
+          },
         };
       });
     },

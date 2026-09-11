@@ -5,9 +5,7 @@ import { useGameEngine } from '../hooks/useGameEngine';
 import { useOnlineRoom } from '../hooks/useOnlineRoom';
 import { SetupScreen } from '../components/game/SetupScreen';
 import { LobbyScreen } from '../components/online/LobbyScreen';
-import { OpponentSeats } from '../components/game/OpponentSeats';
-import { GameBoardArena } from '../components/game/GameBoardArena';
-import { PlayerHandConsole } from '../components/game/PlayerHandConsole';
+import { TabletopBoard } from '../components/tabletop/TabletopBoard';
 import { CardRevealModal } from '../components/game/CardRevealModal';
 import { DebugPeekModal } from '../components/game/DebugPeekModal';
 import { SaveSelectModal } from '../components/game/SaveSelectModal';
@@ -15,6 +13,7 @@ import { RoundStartModal } from '../components/game/RoundStartModal';
 import { RoundClearModal } from '../components/game/RoundClearModal';
 import { GameOverModal } from '../components/game/GameOverModal';
 import { ActionLogDrawer } from '../components/game/ActionLogDrawer';
+import { ItemActivationCutin } from '../components/game/ItemActivationCutin';
 import { ItemType } from '../types/game';
 
 type PlayMode = 'LOCAL' | 'ONLINE';
@@ -201,51 +200,44 @@ export default function GamePage() {
         </h1>
       </header>
 
-      {/* Main Card Game Battle Mat Area */}
-      <div className="w-full max-w-4xl space-y-4 sm:space-y-5 relative z-10 pb-10">
-        {/* 1. Opponents Arena Seats (対戦相手の席 & 伏せカードファン) */}
-        <OpponentSeats
-          players={state.players}
-          currentTurnPlayerIndex={state.currentTurnPlayerIndex}
-          myPlayerId={myPlayerId}
-          isMyTurn={isMyTurn}
-          canTargetPlay={state.phase === 'TURN_ACTION'}
-          onPlayTarget={(targetIndex) => handlePlayCard(targetIndex)}
-        />
-
-        {/* 2. Central Battlefield & 3D Stage Deck (中央の3D山札 & ドローコマンド) */}
-        <GameBoardArena
+      {/* Main Tabletop Game Area Container */}
+      <div className="w-full max-w-5xl space-y-4 relative z-10 pb-8">
+        {/* ── Realistic 3D Tabletop Arena (Board, Seats, Stack Deck, Life Coins & Hand) ── */}
+        <TabletopBoard
           round={state.round}
           stageDeck={state.stageDeck}
           initialGoodCount={state.initialRoundGoodCount}
           initialBadCount={state.initialRoundBadCount}
           diceResults={state.diceResults}
-          currentTurnPlayer={currentTurnPlayer}
+          players={state.players}
+          currentTurnPlayerIndex={state.currentTurnPlayerIndex}
+          perspectivePlayerIndex={
+            isOnline
+              ? Math.max(0, state.players.findIndex((p) => p.id === myPlayerId))
+              : state.currentTurnPlayerIndex
+          }
+          phase={state.phase}
           isMyTurn={isMyTurn}
           canPlay={state.phase === 'TURN_ACTION'}
           glitchedCard={state.glitchedCard}
           continuedCard={state.continuedCard}
+          isOnline={isOnline}
+          lastAnnouncement={state.lastUsedItemAnnouncement}
+          logs={state.logs}
           onPlaySelf={() => handlePlayCard(state.currentTurnPlayerIndex)}
+          onPlayTarget={(targetIndex) => handlePlayCard(targetIndex)}
+          onUseItem={(item, pIdx) => handleUseItem(item, pIdx)}
+          onOpenSaveModal={(pIdx) => handleOpenSaveModal(pIdx)}
         />
 
-        {/* 3. My Player Hand & Console (手元のTCG手札ファン & 自分のステータス) */}
-        <PlayerHandConsole
-          players={state.players}
-          currentTurnPlayerIndex={state.currentTurnPlayerIndex}
-          myPlayerId={myPlayerId}
-          isMyTurn={isMyTurn}
-          glitchedCard={state.glitchedCard}
-          continuedCard={state.continuedCard}
-          disabled={state.phase !== 'TURN_ACTION' || (isOnline && !isMyTurn)}
-          onUseItem={handleUseItem}
-          onOpenSaveModal={handleOpenSaveModal}
-        />
-
-        {/* 4. Action Logs Drawer */}
+        {/* Action Logs Drawer */}
         <ActionLogDrawer logs={state.logs} />
 
+        {/* Item Activation Flash Cut-in Banner */}
+        <ItemActivationCutin announcement={state.lastUsedItemAnnouncement} />
+
         {/* Bottom Menu Buttons */}
-        <div className="flex justify-center gap-4 pt-1">
+        <div className="flex justify-center gap-4 pt-2">
           {isOnline ? (
             <button
               type="button"

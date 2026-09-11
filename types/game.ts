@@ -36,6 +36,15 @@ export interface GameLog {
   type?: 'good' | 'bad' | 'item' | 'system' | 'round';
 }
 
+export interface ItemAnnouncement {
+  id: string;
+  playerIndex: number;
+  playerName: string;
+  item: ItemType;
+  message: string;
+  timestamp: number;
+}
+
 export interface GameState {
   phase: GamePhase;
   players: Player[];
@@ -54,4 +63,5 @@ export interface GameState {
   logs: GameLog[];
   debugPeekCard: CardType | null; // DEBUGアイテムで覗き見たカード
   saveModalPlayerIndex: number | null; // SAVE使用時に手札から選ぶモード
+  lastUsedItemAnnouncement?: ItemAnnouncement | null; // アイテム使用時のカットイン通知
 }

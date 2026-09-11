@@ -437,25 +437,35 @@ export function useGameEngine() {
         });
       };
 
+      let currentItemDeck = [...prev.itemDeck];
+
+      let itemAnnouncementMsg = '';
       switch (item) {
         case 'DEBUG': {
           if (newDeck.length > 0) {
             debugPeek = newDeck[0];
             playersList[playerIndex] = { ...player, items: updatedItems };
+            itemAnnouncementMsg = '一番上のステージカードを覗き見中...';
             logItem(`🔍 ${player.name} が「DEBUG」を使用しました。一番上のカードを確認中...`);
           }
           break;
         }
         case 'RESET': {
-          newDeck = shuffle(newDeck);
-          playersList[playerIndex] = { ...player, items: updatedItems };
-          logItem(`🔄 ${player.name} が「RESET」を使用しました。残りのステージデッキ（${newDeck.length}枚）をシャッフルしました！`);
+          const redrawCount = Math.max(1, updatedItems.length);
+          let pool = [...currentItemDeck, ...updatedItems];
+          pool = shuffle(pool);
+          const { drawn, remaining } = drawItems(redrawCount, pool);
+          currentItemDeck = remaining;
+          playersList[playerIndex] = { ...player, items: drawn };
+          itemAnnouncementMsg = `手札のアイテムを全入れ替え！ 新しいアイテム（${redrawCount}枚）を引き直しました！`;
+          logItem(`🔄 ${player.name} が「RESET」を使用！ 手札を山札に戻し、${redrawCount}枚の新しいアイテムを引き直しました！`);
           break;
         }
         case '1UP': {
           const currentLives = player.lives;
           const newLives = Math.min(3, currentLives + 1);
           playersList[playerIndex] = { ...player, lives: newLives, items: updatedItems };
+          itemAnnouncementMsg = `ライフが1回復しました！（❤️ ${currentLives} ➔ ${newLives}）`;
           logItem(`❤️ ${player.name} が「1UP」を使用しました！ 残機: ${newLives}`);
           break;
         }
@@ -471,6 +481,7 @@ export function useGameEngine() {
               items: updatedItems,
               savedItem: setToSave,
             };
+            itemAnnouncementMsg = `「${setToSave}」をSAVEスロットにセット！ (ライフ0時に全回復)`;
             logItem(`💾 ${player.name} が「SAVE」を使用し、「${setToSave}」をセットしました。GAME OVER時に復活します。`);
           }
           break;
@@ -478,12 +489,14 @@ export function useGameEngine() {
         case 'CONTINUE': {
           continued = true;
           playersList[playerIndex] = { ...player, items: updatedItems };
+          itemAnnouncementMsg = 'BADカードの残機減少を無効化するバリアを展開！';
           logItem(`🕹️ ${player.name} が「CONTINUE」を発動！ このターン、BADを引いても無効化してターン継続します！`);
           break;
         }
         case 'GLITCH': {
           glitched = true;
           playersList[playerIndex] = { ...player, items: updatedItems };
+          itemAnnouncementMsg = '次に引くカードの効果を無効化して破棄するグリッチを展開！';
           logItem(`👾 ${player.name} が「GLITCH」を発動！ 次に引くカードを無効化して破棄します！`);
           break;
         }
@@ -493,11 +506,20 @@ export function useGameEngine() {
         ...prev,
         players: playersList,
         stageDeck: newDeck,
+        itemDeck: currentItemDeck,
         debugPeekCard: debugPeek,
         glitchedCard: glitched,
         continuedCard: continued,
         logs,
         saveModalPlayerIndex: null,
+        lastUsedItemAnnouncement: {
+          id: Math.random().toString(36).substring(2, 9),
+          playerIndex,
+          playerName: player.name,
+          item,
+          message: itemAnnouncementMsg,
+          timestamp: Date.now(),
+        },
       };
     });
   }, []);

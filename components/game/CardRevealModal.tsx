@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CardType, ItemType, Player } from '../../types/game';
-import { ITEM_DEFINITIONS } from '../../constants/items';
+import { CardType, Player } from '../../types/game';
 
 interface CardRevealModalProps {
   card: CardType;
@@ -27,8 +26,21 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
   onConfirmResult,
   isRevealing,
 }) => {
-  const [isFlipped, setIsFlipped] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(!isRevealing);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isSelf = actorPlayer.id === targetPlayer.id;
+
+  // Whenever the phase switches to CARD_RESULT, ensure card is flipped on all screens
+  useEffect(() => {
+    if (!isRevealing) {
+      setIsFlipped(true);
+    }
+  }, [isRevealing]);
+
+  // Reset isSubmitting when card or phase changes
+  useEffect(() => {
+    setIsSubmitting(false);
+  }, [card, isRevealing]);
 
   // カードめくり開始
   const handleFlip = () => {
@@ -36,11 +48,17 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
     setIsFlipped(true);
     setTimeout(() => {
       onRevealComplete();
-    }, 600);
+    }, 500);
+  };
+
+  const handleConfirm = () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    onConfirmResult();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
         {/* Top Context Header */}
         <div className="mb-4">
@@ -137,14 +155,15 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
             {/* Confirm & Proceed Button */}
             <button
               type="button"
-              onClick={onConfirmResult}
-              className={`w-full py-3.5 px-6 font-black text-base rounded-xl transition duration-150 shadow-lg cursor-pointer ${
+              disabled={isSubmitting}
+              onClick={handleConfirm}
+              className={`w-full py-3.5 px-6 font-black text-base rounded-xl transition duration-150 shadow-lg cursor-pointer disabled:opacity-50 ${
                 card === 'GOOD' || continued || glitched
                   ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-900/50'
                   : 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-900/50'
               }`}
             >
-              結果を確定して進む ➔
+              {isSubmitting ? '処理中...' : '結果を確定して進む ➔'}
             </button>
           </div>
         )}

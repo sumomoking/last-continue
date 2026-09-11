@@ -48,8 +48,8 @@ body {
     0 4px 0 #0f172a,
     0 5px 0 #1e293b,
     0 6px 0 #0f172a,
-    0 8px 15px rgba(0, 0, 0, 0.7),
-    0 0 25px rgba(0, 229, 255, 0.25);
+    0 8px 18px rgba(0, 0, 0, 0.8),
+    0 0 25px rgba(0, 229, 255, 0.2);
 }
 
 /* Holographic Shimmer Effect */
@@ -74,43 +74,64 @@ body {
   z-index: 40 !important;
 }
 
-/* Animations */
-@keyframes pulse-glow-good {
-  0%, 100% {
-    box-shadow: 0 0 15px rgba(0, 229, 255, 0.4), inset 0 0 15px rgba(0, 229, 255, 0.2);
-  }
-  50% {
-    box-shadow: 0 0 35px rgba(0, 229, 255, 0.85), inset 0 0 25px rgba(0, 229, 255, 0.45);
-  }
+/* Tabletop Felt Surface & Wood Rim */
+.tabletop-surface {
+  background: radial-gradient(circle at 50% 45%, #131b2e 0%, #0d1322 55%, #070a12 100%);
+  box-shadow: 
+    inset 0 0 80px rgba(0, 0, 0, 0.8),
+    inset 0 0 20px rgba(0, 229, 255, 0.15),
+    0 15px 40px rgba(0, 0, 0, 0.9);
 }
 
-@keyframes pulse-glow-bad {
-  0%, 100% {
-    box-shadow: 0 0 15px rgba(255, 0, 85, 0.4), inset 0 0 15px rgba(255, 0, 85, 0.2);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(255, 0, 85, 0.9), inset 0 0 30px rgba(255, 0, 85, 0.5);
-  }
+.table-wood-rail {
+  background: linear-gradient(180deg, #2a1b14 0%, #1a100c 50%, #0e0806 100%);
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.9),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.8);
 }
 
-@keyframes pulse-glow-turn {
-  0%, 100% {
-    border-color: rgba(255, 183, 0, 0.6);
-    box-shadow: 0 0 15px rgba(255, 183, 0, 0.35);
-  }
-  50% {
-    border-color: rgba(255, 183, 0, 1);
-    box-shadow: 0 0 30px rgba(255, 183, 0, 0.75);
-  }
+.table-leather-stitch {
+  border: 1px dashed rgba(255, 215, 0, 0.25);
 }
 
-@keyframes glitch-anim {
-  0% { transform: translate(0); }
-  20% { transform: translate(-3px, 3px); }
-  40% { transform: translate(-3px, -3px); }
-  60% { transform: translate(3px, 3px); }
-  80% { transform: translate(3px, -3px); }
-  100% { transform: translate(0); }
+/* Physical Dice Styling */
+.dice-face {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 60%, #cbd5e1 100%);
+  box-shadow: 
+    inset 0 0 4px rgba(0, 0, 0, 0.2),
+    0 6px 12px rgba(0, 0, 0, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.dice-dot {
+  background: radial-gradient(circle at 35% 35%, #ef4444 0%, #b91c1c 80%, #7f1d1d 100%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.dice-dot-black {
+  background: radial-gradient(circle at 35% 35%, #334155 0%, #0f172a 80%, #020617 100%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+/* Physical Life Coin Token */
+.coin-active {
+  background: radial-gradient(circle at 35% 30%, #ffd700 0%, #eab308 50%, #a16207 100%);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.7),
+    0 0 12px rgba(250, 204, 21, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.6),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.5);
+}
+
+.coin-lost {
+  background: radial-gradient(circle at 35% 30%, #475569 0%, #334155 60%, #1e293b 100%);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.8),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.6);
+  opacity: 0.4;
+  filter: grayscale(100%);
 }
 
 .animate-glow-good {
