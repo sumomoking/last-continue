@@ -27,7 +27,6 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
   isRevealing,
 }) => {
   const [isFlipped, setIsFlipped] = useState(!isRevealing);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(3);
   const isSelf = actorPlayer.id === targetPlayer.id;
 
@@ -61,7 +60,7 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
     }
   }, [isRevealing]);
 
-  // 2. 結果オープン後、約3秒で自動進行（カウントダウン）
+  // 2. 結果オープン後、完全自動で3秒カウントダウンして進行
   useEffect(() => {
     if (isRevealing || !isFlipped) return;
 
@@ -80,7 +79,6 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
     const autoAdvanceTimer = setTimeout(() => {
       if (!hasTriggeredRef.current) {
         hasTriggeredRef.current = true;
-        setIsSubmitting(true);
         onConfirmResult();
       }
     }, 3000);
@@ -90,14 +88,6 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
       clearTimeout(autoAdvanceTimer);
     };
   }, [isRevealing, isFlipped, onConfirmResult]);
-
-  // 手動で即座にスキップ/確定する場合
-  const handleManualProceed = () => {
-    if (hasTriggeredRef.current || isSubmitting) return;
-    hasTriggeredRef.current = true;
-    setIsSubmitting(true);
-    onConfirmResult();
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none">
@@ -130,14 +120,14 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
           </div>
 
           {/* 3D Flip Card Container */}
-          <div className="perspective-1000 w-52 h-72 sm:w-60 sm:h-80 my-2 cursor-pointer" onClick={handleManualProceed}>
+          <div className="perspective-1000 w-52 h-72 sm:w-60 sm:h-80 my-2 pointer-events-none">
             <div
               className={`w-full h-full relative transition-transform duration-700 transform-style-3d ${
                 isFlipped ? 'rotate-y-180' : ''
               }`}
             >
               {/* Card Back (裏面) */}
-              <div className="absolute inset-0 w-full h-full backface-hidden rounded-2xl bg-gradient-to-br from-[#1e293b] via-[#0f172a] to-[#020617] border-2 border-amber-500/50 shadow-2xl flex flex-col items-center justify-center p-6 text-center select-none group">
+              <div className="absolute inset-0 w-full h-full backface-hidden rounded-2xl bg-gradient-to-br from-[#1e293b] via-[#0f172a] to-[#020617] border-2 border-amber-500/50 shadow-2xl flex flex-col items-center justify-center p-6 text-center select-none">
                 <div className="w-16 h-16 rounded-2xl bg-amber-950/40 border border-amber-500/40 flex items-center justify-center text-3xl mb-3 shadow-inner">
                   ❓
                 </div>
@@ -196,7 +186,7 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
             </div>
           </div>
 
-          {/* Auto-Advance Progress & Fast-Skip Button */}
+          {/* Auto-Advance Progress Indicator */}
           {isFlipped && !isRevealing && (
             <div className="w-full mt-3 space-y-2 animate-fade-in">
               {/* Countdown Progress Bar */}
@@ -209,20 +199,9 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
                 />
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-amber-200/80 px-1 font-mono">
-                <span className="flex items-center gap-1">
-                  <span className="animate-spin text-amber-400">⏳</span>
-                  <span>{timeLeft}秒後に自動で進みます</span>
-                </span>
-
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={handleManualProceed}
-                  className="px-3 py-1 rounded-lg bg-amber-950/60 hover:bg-amber-900/80 border border-amber-500/40 text-amber-200 text-xs font-bold transition cursor-pointer active:scale-95 flex items-center gap-1"
-                >
-                  <span>{isSubmitting ? '処理中...' : '即スキップ ➔'}</span>
-                </button>
+              <div className="flex items-center justify-center text-xs text-amber-200/90 font-mono gap-1.5 py-0.5">
+                <span className="animate-spin text-amber-400">⏳</span>
+                <span>{timeLeft}秒後に自動で次の手番へ進みます...</span>
               </div>
             </div>
           )}
