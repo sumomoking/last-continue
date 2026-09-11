@@ -17,8 +17,7 @@ export const SaveSelectModal: React.FC<SaveSelectModalProps> = ({
   onCancel,
 }) => {
   // SAVEカード以外の所持アイテム
-  const availableItems = player.items.filter((item, index, self) => {
-    // 自身が持っているSAVEのうち1枚は消費されるため、他のアイテムまたは2枚目以降のSAVEを選択可能
+  const availableItems = player.items.filter((item) => {
     const saveCount = player.items.filter((i) => i === 'SAVE').length;
     if (item === 'SAVE' && saveCount <= 1) return false;
     return true;
@@ -27,19 +26,25 @@ export const SaveSelectModal: React.FC<SaveSelectModalProps> = ({
   const [selectedItem, setSelectedItem] = useState<ItemType | null>(availableItems[0] || null);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-      <div className="w-full max-w-md bg-slate-900 border border-emerald-500/50 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-emerald-950/60 text-center relative">
-        <div className="inline-block px-3 py-1 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-xs font-mono font-bold text-emerald-300 mb-3">
-          💾 SAVE ITEM（残機1専用）
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none">
+      <div className="w-full max-w-md table-wood-rail border-2 border-amber-600/60 rounded-3xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.9)] text-center relative overflow-hidden">
+        {/* Brass Corner Brackets */}
+        <div className="absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-amber-500/60 rounded-tl-sm pointer-events-none" />
+        <div className="absolute top-2 right-2 w-3.5 h-3.5 border-t-2 border-r-2 border-amber-500/60 rounded-tr-sm pointer-events-none" />
+        <div className="absolute bottom-2 left-2 w-3.5 h-3.5 border-b-2 border-l-2 border-amber-500/60 rounded-bl-sm pointer-events-none" />
+        <div className="absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-amber-500/60 rounded-br-sm pointer-events-none" />
+
+        <div className="inline-block px-3 py-1 bg-amber-500/20 border border-amber-400/40 rounded-full text-xs font-mono font-bold text-amber-300 mb-3 shadow-inner">
+          💾 SAVE ITEM（残機1専用・1周有効）
         </div>
-        <h3 className="text-xl font-black text-white mb-2">保管するアイテムを選択</h3>
-        <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+        <h3 className="text-xl font-black text-white mb-2 drop-shadow">保管するアイテムを選択</h3>
+        <p className="text-xs text-slate-300 mb-5 leading-relaxed">
           SAVEの下にセットするアイテムを1枚選んでください。<br />
-          次でGAME OVER（残機0）になった瞬間にそのアイテムが手札に戻り、<strong>残機1で復活</strong>します。
+          <strong className="text-amber-300">自分の手番が1周する間</strong>にGAME OVER（残機0）になった瞬間、そのアイテムが手札に戻り<strong>残機1で復活</strong>します（発動せず手番が回ってきた場合は手札に戻ります）。
         </p>
 
         {availableItems.length === 0 ? (
-          <div className="py-6 text-slate-400 text-xs bg-slate-950/60 rounded-xl border border-slate-800 mb-4">
+          <div className="py-6 text-slate-400 text-xs bg-black/40 rounded-xl border border-amber-600/30 mb-4">
             他にセットできる手札アイテムがありません。<br />
             （SAVEを単体で発動することはできません）
           </div>
@@ -55,18 +60,18 @@ export const SaveSelectModal: React.FC<SaveSelectModalProps> = ({
                   onClick={() => setSelectedItem(item)}
                   className={`p-3 rounded-xl border cursor-pointer transition flex items-center justify-between ${
                     isSelected
-                      ? 'bg-emerald-950/50 border-emerald-400 text-white shadow-md ring-1 ring-emerald-400/50'
-                      : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-600'
+                      ? 'bg-amber-950/60 border-amber-400 text-white shadow-md ring-1 ring-amber-400/50'
+                      : 'bg-slate-900/70 border-slate-700 text-slate-300 hover:border-amber-500/40'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{info.icon}</span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">{info.icon}</span>
                     <div>
-                      <div className="text-xs font-bold">{info.name}</div>
+                      <div className="text-xs font-bold text-amber-200">{info.name}</div>
                       <div className="text-[11px] text-slate-400">{info.description}</div>
                     </div>
                   </div>
-                  {isSelected && <span className="text-emerald-400 font-bold text-sm">✓</span>}
+                  {isSelected && <span className="text-amber-300 font-black text-base">✓</span>}
                 </div>
               );
             })}
@@ -78,7 +83,7 @@ export const SaveSelectModal: React.FC<SaveSelectModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition cursor-pointer"
+            className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition cursor-pointer"
           >
             キャンセル
           </button>
@@ -86,7 +91,7 @@ export const SaveSelectModal: React.FC<SaveSelectModalProps> = ({
             type="button"
             disabled={!selectedItem}
             onClick={() => selectedItem && onConfirm(selectedItem)}
-            className="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-900/40 transition cursor-pointer"
+            className="flex-1 py-3 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-950/60 border border-amber-200 transition cursor-pointer active:scale-98"
           >
             SAVEをセットする
           </button>

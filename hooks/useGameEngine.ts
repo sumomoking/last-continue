@@ -300,6 +300,20 @@ export function useGameEngine() {
         nextTurnPlayerIndex = getNextAlivePlayerIndex(actorIdx, playersList);
       }
 
+      // ── SAVEの1周有効期限チェック ──
+      // 手番が他プレイヤーから移行し、次手番プレイヤーが未発動のSAVEを保持している場合、1周経過として手札に戻す
+      if (nextTurnPlayerIndex !== actorIdx && playersList[nextTurnPlayerIndex]?.savedItem) {
+        const expiredItem = playersList[nextTurnPlayerIndex].savedItem!;
+        const currentHand = playersList[nextTurnPlayerIndex].items;
+        const newHand = currentHand.length < MAX_ITEM_COUNT ? [...currentHand, expiredItem] : currentHand;
+        playersList[nextTurnPlayerIndex] = {
+          ...playersList[nextTurnPlayerIndex],
+          savedItem: null,
+          items: newHand,
+        };
+        addInternalLog(`💾 ${playersList[nextTurnPlayerIndex].name} のSAVE効果が1周経過して終了しました。セットカード「${expiredItem}」が手札に戻りました。`, 'item');
+      }
+
       // 勝者判定チェック（生存者1人）
       const alivePlayers = getAlivePlayers(playersList);
       if (alivePlayers.length <= 1) {
@@ -359,9 +373,15 @@ export function useGameEngine() {
       // 生存プレイヤー全員にアイテムを配布（最大4個まで）
       const updatedPlayers = prev.players.map((player) => {
         if (player.isGameOver) return player;
-        const availableSlots = Math.max(0, MAX_ITEM_COUNT - player.items.length);
-        const drawCount = Math.min(2, availableSlots);
         let newItems = [...player.items];
+        // もし未発動のSAVEが残っていたら手札に戻す
+        if (player.savedItem) {
+          if (newItems.length < MAX_ITEM_COUNT) {
+            newItems.push(player.savedItem);
+          }
+        }
+        const availableSlots = Math.max(0, MAX_ITEM_COUNT - newItems.length);
+        const drawCount = Math.min(2, availableSlots);
         if (drawCount > 0) {
           const { drawn, remaining } = drawItems(drawCount, currentItemDeck);
           currentItemDeck = remaining;
@@ -369,6 +389,7 @@ export function useGameEngine() {
         }
         return {
           ...player,
+          savedItem: null,
           items: newItems,
         };
       });

@@ -23,7 +23,7 @@ export const ITEM_DEFINITIONS: Record<ItemType, ItemInfo> = {
     id: 'SAVE',
     name: 'SAVE',
     icon: '💾',
-    description: '残り残機1の時のみ使用可能。手札から1枚セットし、GAME OVER時にそのカードを手札に戻して残機1で復活します。',
+    description: '残り残機1の時のみ使用可能。手札から1枚セットし、自分の手番が1周するまで有効。GAME OVER時にそのカードを手札に戻して残機1で復活します（発動せず手番が回ってきた場合は手札に戻ります）。',
     timing: '残機1のターン（PLAY前）',
     canUseInTurn: true,
   },

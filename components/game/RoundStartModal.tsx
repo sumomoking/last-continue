@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { PhysicalDice } from "../tabletop/PhysicalDice";
 
 interface RoundStartModalProps {
@@ -22,7 +22,10 @@ export const RoundStartModal: React.FC<RoundStartModalProps> = ({
 }) => {
   const [isRolling, setIsRolling] = useState(true);
   const [displayDice, setDisplayDice] = useState<[number, number]>([1, 1]);
+  const [timeLeft, setTimeLeft] = useState(5);
+  const hasTriggeredRef = useRef(false);
 
+  // 1. ダイスロールアニメーション
   useEffect(() => {
     let count = 0;
     const interval = setInterval(() => {
@@ -31,7 +34,7 @@ export const RoundStartModal: React.FC<RoundStartModalProps> = ({
         Math.floor(Math.random() * 6) + 1,
       ]);
       count++;
-      if (count > 10) {
+      if (count > 8) {
         clearInterval(interval);
         setDisplayDice(diceResults);
         setIsRolling(false);
@@ -40,6 +43,36 @@ export const RoundStartModal: React.FC<RoundStartModalProps> = ({
 
     return () => clearInterval(interval);
   }, [diceResults]);
+
+  // 2. ダイス確定後、5秒間のカウントダウンを経て自動開始
+  useEffect(() => {
+    if (isRolling) return;
+
+    setTimeLeft(5);
+    hasTriggeredRef.current = false;
+
+    const countdownInterval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    const autoStartTimer = setTimeout(() => {
+      if (!hasTriggeredRef.current) {
+        hasTriggeredRef.current = true;
+        onConfirm();
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(countdownInterval);
+      clearTimeout(autoStartTimer);
+    };
+  }, [isRolling, onConfirm]);
 
   const totalDice = displayDice[0] + displayDice[1];
   const finalGood = goodCount !== undefined ? goodCount : Math.ceil(totalDice / 2);
@@ -90,7 +123,7 @@ export const RoundStartModal: React.FC<RoundStartModalProps> = ({
 
         {/* Initial GOOD / BAD breakdown revealed at round start */}
         {!isRolling ? (
-          <div className="space-y-3 mb-5 animate-fade-in">
+          <div className="space-y-3 animate-fade-in">
             <div className="p-3 bg-black/40 border border-amber-600/40 rounded-2xl">
               <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300 mb-2">
                 📋 初期デッキ構成（最初のみ公開）
@@ -119,22 +152,27 @@ export const RoundStartModal: React.FC<RoundStartModalProps> = ({
             <p className="text-[11px] text-amber-200/90 font-medium">
               🧠 プレイ中は残り枚数が隠れるので、この初期枚数を覚えて推理しよう！
             </p>
+
+            {/* 5-second Auto-Start Countdown Progress Bar */}
+            <div className="pt-2 space-y-2">
+              <div className="w-full bg-black/50 border border-amber-600/30 rounded-full h-2.5 overflow-hidden relative">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-1000 ease-linear rounded-full"
+                  style={{ width: `${(timeLeft / 5) * 100}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-center text-xs text-amber-200/90 font-mono gap-1.5 py-0.5">
+                <span className="animate-spin text-amber-400">⏳</span>
+                <span>{timeLeft}秒後に自動でラウンドが開始されます...</span>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="py-4 text-xs text-slate-400 animate-pulse">
+          <div className="py-6 text-xs text-slate-400 animate-pulse font-medium">
             🎲 ダイスロール中...
           </div>
         )}
-
-        {/* Start Button */}
-        <button
-          type="button"
-          disabled={isRolling}
-          onClick={onConfirm}
-          className="w-full py-3.5 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 disabled:opacity-50 text-slate-950 font-black text-base tracking-wider rounded-xl shadow-lg shadow-amber-950/60 border border-amber-200 transition cursor-pointer active:scale-98"
-        >
-          ラウンドを開始する
-        </button>
       </div>
     </div>
   );

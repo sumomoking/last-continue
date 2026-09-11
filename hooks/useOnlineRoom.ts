@@ -297,27 +297,48 @@ export function useOnlineRoom() {
         const roomRef = doc(db, 'rooms', currentRoom.id);
         const remainingPlayers = currentRoom.players.filter((p) => p.id !== playerId);
 
+        const isGamePlaying = currentRoom.status === 'PLAYING';
+        const isDead = currentRoom.gameState?.players.find((p) => p.id === playerId)?.isGameOver || false;
+
         if (remainingPlayers.length === 0) {
           // 誰もいなくなったら削除
           await deleteDoc(roomRef);
-        } else if (currentRoom.status === 'PLAYING') {
-          // ゲーム進行中に誰かが抜けたら、全プレイヤーに対してゲームを強制終了
+        } else if (isGamePlaying && !isDead) {
+          // 生存プレイヤーが対戦途中で抜けた場合のみ、ゲームを強制終了
           await updateDoc(roomRef, {
             status: 'ABORTED',
-            terminatedReason: `プレイヤー「${leavingName}」がルームを退出したため、ゲームが強制終了されました。`,
+            terminatedReason: `生存プレイヤー「${leavingName}」が対戦途中でルームを退出したため、ゲームが強制終了されました。`,
             players: remainingPlayers,
             updatedAt: Date.now(),
           });
         } else {
-          // ロビー待機中の退出
+          // ロビー待機中、または敗退済みプレイヤーの退出（ゲームは継続）
           let nextHostId = currentRoom.hostId;
-          if (currentRoom.hostId === playerId) {
+          if (currentRoom.hostId === playerId && remainingPlayers.length > 0) {
             nextHostId = remainingPlayers[0].id;
             remainingPlayers[0].isHost = true;
           }
+
+          let updatedGameState = currentRoom.gameState;
+          if (isGamePlaying && updatedGameState) {
+            updatedGameState = {
+              ...updatedGameState,
+              logs: [
+                {
+                  id: Math.random().toString(36).substring(2, 9),
+                  text: `👋 敗退した ${leavingName} が観戦を終了してルームを退出しました。`,
+                  timestamp: new Date().toLocaleTimeString('ja-JP'),
+                  type: 'system',
+                },
+                ...updatedGameState.logs,
+              ],
+            };
+          }
+
           await updateDoc(roomRef, {
             players: remainingPlayers,
             hostId: nextHostId,
+            ...(updatedGameState ? { gameState: updatedGameState } : {}),
             updatedAt: Date.now(),
           });
         }
@@ -589,6 +610,20 @@ export function useOnlineRoom() {
         nextTurnPlayerIndex = getNextAlivePlayerIndex(actorIdx, playersList);
       }
 
+      // ── SAVEの1周有効期限チェック ──
+      // 手番が他プレイヤーから移行し、次手番プレイヤーが未発動のSAVEを保持している場合、1周経過として手札に戻す
+      if (nextTurnPlayerIndex !== actorIdx && playersList[nextTurnPlayerIndex]?.savedItem) {
+        const expiredItem = playersList[nextTurnPlayerIndex].savedItem!;
+        const currentHand = playersList[nextTurnPlayerIndex].items;
+        const newHand = currentHand.length < MAX_ITEM_COUNT ? [...currentHand, expiredItem] : currentHand;
+        playersList[nextTurnPlayerIndex] = {
+          ...playersList[nextTurnPlayerIndex],
+          savedItem: null,
+          items: newHand,
+        };
+        addInternalLog(`💾 ${playersList[nextTurnPlayerIndex].name} のSAVE効果が1周経過して終了しました。セットカード「${expiredItem}」が手札に戻りました。`, 'item');
+      }
+
       // 勝者判定
       const alivePlayers = getAlivePlayers(playersList);
       if (alivePlayers.length <= 1) {
@@ -648,9 +683,15 @@ export function useOnlineRoom() {
 
       const updatedPlayers = prev.players.map((player) => {
         if (player.isGameOver) return player;
-        const availableSlots = Math.max(0, MAX_ITEM_COUNT - player.items.length);
-        const drawCount = Math.min(2, availableSlots);
         let newItems = [...player.items];
+        // もし未発動のSAVEが残っていたら手札に戻す
+        if (player.savedItem) {
+          if (newItems.length < MAX_ITEM_COUNT) {
+            newItems.push(player.savedItem);
+          }
+        }
+        const availableSlots = Math.max(0, MAX_ITEM_COUNT - newItems.length);
+        const drawCount = Math.min(2, availableSlots);
         if (drawCount > 0) {
           const { drawn, remaining } = drawItems(drawCount, currentItemDeck);
           currentItemDeck = remaining;
@@ -658,6 +699,7 @@ export function useOnlineRoom() {
         }
         return {
           ...player,
+          savedItem: null,
           items: newItems,
         };
       });
