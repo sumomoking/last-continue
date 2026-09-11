@@ -9,6 +9,7 @@ interface TurnActionPanelProps {
   players: Player[];
   glitchedCard?: boolean;
   continuedCard?: boolean;
+  myPlayerId?: string;
   onPlaySelf: () => void;
   onPlayTarget: (targetIndex: number) => void;
   disabled: boolean;
@@ -20,10 +21,13 @@ export const TurnActionPanel: React.FC<TurnActionPanelProps> = ({
   players,
   glitchedCard = false,
   continuedCard = false,
+  myPlayerId,
   onPlaySelf,
   onPlayTarget,
   disabled,
 }) => {
+  const isMyTurn = !myPlayerId || currentTurnPlayer.id === myPlayerId;
+
   // 手番プレイヤー以外の生存プレイヤー
   const otherAlivePlayers = players
     .map((player, index) => ({ player, index }))
@@ -37,9 +41,16 @@ export const TurnActionPanel: React.FC<TurnActionPanelProps> = ({
           <span className="w-2 h-2 rounded-full bg-yellow-400 animate-ping" />
           現在のターン：
           <span className="text-yellow-400 font-black text-base">{currentTurnPlayer.name}</span>
+          {myPlayerId && isMyTurn && (
+            <span className="ml-1 px-2 py-0.2 bg-yellow-400 text-slate-950 text-[10px] font-black rounded-full">
+              YOUR TURN
+            </span>
+          )}
         </div>
         <p className="text-xs text-slate-400 mt-1">
-          自分で挑戦するか、他のプレイヤーに押し付けるかを選択してください。
+          {isMyTurn
+            ? '自分で挑戦するか、他のプレイヤーに押し付けるかを選択してください。'
+            : `⏳ ${currentTurnPlayer.name} のアクションを待っています...`}
         </p>
 
         {/* Active Item Buff Badges */}

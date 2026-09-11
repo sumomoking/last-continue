@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 
 interface SetupScreenProps {
   onStart: (playerNames: string[]) => void;
+  onSelectOnline: () => void;
 }
 
-export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
+export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, onSelectOnline }) => {
   const [playerCount, setPlayerCount] = useState<3 | 4>(3);
   const [playerNames, setPlayerNames] = useState<string[]>([
     'Player 1',
@@ -32,10 +33,22 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
       {/* Background Decorative Grid */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293715_1px,transparent_1px),linear-gradient(to_bottom,#1f293715_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
 
+      {/* Online Mode Switch Button on Top Right */}
+      <div className="w-full max-w-lg mb-4 flex justify-end">
+        <button
+          type="button"
+          onClick={onSelectOnline}
+          className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold rounded-full shadow-lg shadow-cyan-950/50 border border-cyan-400/40 transition flex items-center gap-1.5 cursor-pointer transform hover:scale-105"
+        >
+          <span>🌐</span>
+          <span>オンライン対戦（部屋作成・参加）➔</span>
+        </button>
+      </div>
+
       <div className="w-full max-w-lg bg-slate-900/90 border border-slate-800 backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-2xl shadow-cyan-950/40 text-center relative">
         {/* Title Badge */}
         <div className="inline-block px-3 py-1 bg-gradient-to-r from-cyan-500/20 to-red-500/20 border border-slate-700/60 rounded-full text-xs font-mono tracking-widest text-slate-300 mb-3">
-          PROTOTYPE v1.0
+          LOCAL PASS & PLAY MODE
         </div>
 
         <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white mb-2">

@@ -11,6 +11,7 @@ interface ItemInventoryProps {
   onOpenSaveModal: (playerIndex: number) => void;
   glitchedCard?: boolean;
   continuedCard?: boolean;
+  myPlayerId?: string;
   disabled: boolean;
 }
 
@@ -21,16 +22,21 @@ export const ItemInventory: React.FC<ItemInventoryProps> = ({
   onOpenSaveModal,
   glitchedCard = false,
   continuedCard = false,
+  myPlayerId,
   disabled,
 }) => {
-  // 表示対象プレイヤー（デフォルトは現在の手番プレイヤー）
-  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number>(currentTurnPlayerIndex);
+  // 表示対象プレイヤー（オンライン時は自分のプレイヤーを優先、ローカル時は手番プレイヤー）
+  const myPlayerIndex = myPlayerId ? players.findIndex((p) => p.id === myPlayerId) : -1;
+  const initialIndex = myPlayerIndex !== -1 ? myPlayerIndex : currentTurnPlayerIndex;
 
-  // ターンが切り替わったら自動的に現在の手番プレイヤーに合わせる
-  const viewingPlayerIndex =
+  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number>(initialIndex);
+
+  // ローカル対戦時はターン切り替えに連動
+  const viewingPlayerIndex = myPlayerIndex !== -1 ? myPlayerIndex : (
     selectedPlayerIndex >= 0 && selectedPlayerIndex < players.length
       ? selectedPlayerIndex
-      : currentTurnPlayerIndex;
+      : currentTurnPlayerIndex
+  );
 
   const player = players[viewingPlayerIndex];
   const isCurrentTurnPlayer = viewingPlayerIndex === currentTurnPlayerIndex;
@@ -61,29 +67,31 @@ export const ItemInventory: React.FC<ItemInventoryProps> = ({
           </h3>
         </div>
 
-        {/* Player Switcher (交代プレイでの手札確認用) */}
-        <div className="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0">
-          <span className="text-[10px] text-slate-500 font-mono mr-1">手札切替:</span>
-          {players.map((p, idx) => {
-            if (p.isGameOver) return null;
-            const isSelected = idx === viewingPlayerIndex;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setSelectedPlayerIndex(idx)}
-                className={`px-2.5 py-1 text-xs rounded-lg font-bold border transition cursor-pointer flex items-center gap-1 ${
-                  isSelected
-                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-sm'
-                    : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <span>{p.name}</span>
-                <span className="text-[10px] opacity-80">({p.items.length}/{MAX_ITEM_COUNT})</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Player Switcher (ローカル対戦時のみ表示) */}
+        {!myPlayerId && (
+          <div className="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0">
+            <span className="text-[10px] text-slate-500 font-mono mr-1">手札切替:</span>
+            {players.map((p, idx) => {
+              if (p.isGameOver) return null;
+              const isSelected = idx === viewingPlayerIndex;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setSelectedPlayerIndex(idx)}
+                  className={`px-2.5 py-1 text-xs rounded-lg font-bold border transition cursor-pointer flex items-center gap-1 ${
+                    isSelected
+                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-sm'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span>{p.name}</span>
+                  <span className="text-[10px] opacity-80">({p.items.length}/{MAX_ITEM_COUNT})</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Items Grid */}
