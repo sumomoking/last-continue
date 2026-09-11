@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { PhysicalDice } from "../tabletop/PhysicalDice";
+import { soundManager } from "../../lib/sound";
 
 interface RoundStartModalProps {
   round: number;
@@ -25,8 +26,9 @@ export const RoundStartModal: React.FC<RoundStartModalProps> = ({
   const [timeLeft, setTimeLeft] = useState(5);
   const hasTriggeredRef = useRef(false);
 
-  // 1. ダイスロールアニメーション
+  // 1. ダイスロールアニメーション & サウンド
   useEffect(() => {
+    soundManager.playDiceRoll();
     let count = 0;
     const interval = setInterval(() => {
       setDisplayDice([
@@ -38,6 +40,7 @@ export const RoundStartModal: React.FC<RoundStartModalProps> = ({
         clearInterval(interval);
         setDisplayDice(diceResults);
         setIsRolling(false);
+        soundManager.playDiceLand();
       }
     }, 70);
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { CardType, Player } from '../../types/game';
+import { soundManager } from '../../lib/sound';
 
 interface CardRevealModalProps {
   card: CardType;
@@ -19,7 +20,6 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
   card,
   actorPlayer,
   targetPlayer,
-  targetPlayerIndex,
   glitched,
   continued,
   onRevealComplete,
@@ -32,15 +32,28 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
 
   const hasTriggeredRef = useRef(false);
 
-  // 1. 自動カードめくり（少しのタメを作ってから自動でオープン）
+  // GLITCH発動時はGOOD/BADを反転
+  const effectiveCard: CardType = glitched ? (card === 'GOOD' ? 'BAD' : 'GOOD') : card;
+
+  // 1. 自動カードめくり（少しのタメを作ってから自動でオープン & 音声再生）
   useEffect(() => {
     hasTriggeredRef.current = false;
     setTimeLeft(3);
 
-    // 350ms 後に自動でフリップアニメーション開始
+    // 350ms 後に自動でフリップアニメーション開始 & カードフリップ音
     const flipTimer = setTimeout(() => {
       setIsFlipped(true);
+      soundManager.playCardFlip();
     }, 350);
+
+    // 700ms 後にカード表面の効果音（GOOD or BAD）を再生
+    const soundTimer = setTimeout(() => {
+      if (effectiveCard === 'GOOD') {
+        soundManager.playGoodStage();
+      } else {
+        soundManager.playBadStage();
+      }
+    }, 700);
 
     // 1050ms (350ms + 700msフリップ完了後) にフェーズを CARD_RESULT へ自動更新
     const completeTimer = setTimeout(() => {
@@ -49,9 +62,10 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
 
     return () => {
       clearTimeout(flipTimer);
+      clearTimeout(soundTimer);
       clearTimeout(completeTimer);
     };
-  }, [card, onRevealComplete]);
+  }, [card, effectiveCard, onRevealComplete]);
 
   // isRevealing が false になった時（または最初からめくられている時）は確実に isFlipped = true
   useEffect(() => {
@@ -64,7 +78,6 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
   useEffect(() => {
     if (isRevealing || !isFlipped) return;
 
-    // 1秒ごとのカウントダウン
     const countdownInterval = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -75,7 +88,6 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
       });
     }, 1000);
 
-    // 3秒後に自動で結果確定（進行）
     const autoAdvanceTimer = setTimeout(() => {
       if (!hasTriggeredRef.current) {
         hasTriggeredRef.current = true;
@@ -140,48 +152,54 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
               {/* Card Front (表面) */}
               <div
                 className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-2xl border-2 shadow-2xl flex flex-col items-center justify-center p-6 text-center select-none ${
-                  card === 'GOOD'
+                  effectiveCard === 'GOOD'
                     ? 'bg-gradient-to-b from-cyan-950/90 via-[#071322] to-[#020914] border-cyan-400 shadow-[0_0_40px_rgba(6,182,212,0.4)]'
                     : 'bg-gradient-to-b from-red-950/90 via-[#1f080e] to-[#0d0205] border-red-500 shadow-[0_0_40px_rgba(239,68,68,0.5)]'
                 }`}
               >
                 {/* Card Badge */}
                 <div className="text-5xl sm:text-6xl mb-2 drop-shadow-md">
-                  {card === 'GOOD' ? '🟦' : '🟥'}
+                  {effectiveCard === 'GOOD' ? '🟦' : '🟥'}
                 </div>
 
                 <div
                   className={`text-2xl sm:text-3xl font-black tracking-wider mb-1.5 ${
-                    card === 'GOOD' ? 'text-cyan-300 drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]' : 'text-red-500 animate-glitch drop-shadow-[0_0_12px_rgba(239,68,68,0.6)]'
+                    effectiveCard === 'GOOD'
+                      ? 'text-cyan-300 drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]'
+                      : 'text-red-500 animate-glitch drop-shadow-[0_0_12px_rgba(239,68,68,0.6)]'
                   }`}
                 >
-                  {card === 'GOOD' ? 'GOOD STAGE' : 'BAD STAGE'}
+                  {effectiveCard === 'GOOD' ? 'GOOD STAGE' : 'BAD STAGE'}
                 </div>
 
                 {/* Status override indicator */}
                 {glitched && (
                   <div className="mt-1.5 px-3 py-1 bg-purple-950/90 border border-purple-400 text-purple-300 font-bold text-xs rounded-lg animate-bounce shadow-md">
-                    👾 GLITCH 無効化発動中！
+                    👾 GLITCH反転発動！ ({card} ➔ {effectiveCard})
                   </div>
                 )}
-                {continued && (
+                {continued && effectiveCard === 'BAD' && (
                   <div className="mt-1.5 px-3 py-1 bg-amber-950/90 border border-amber-400 text-amber-300 font-bold text-xs rounded-lg animate-bounce shadow-md">
                     🕹️ CONTINUE 残機保護発動！
                   </div>
                 )}
 
                 {/* Card Effect Description */}
-                {!glitched && !continued && (
-                  <p className="text-xs text-slate-200 mt-2 font-medium leading-relaxed">
-                    {isSelf
-                      ? card === 'GOOD'
-                        ? '🎉 ターン継続！次のPLAYもあなたの番です。'
-                        : '💀 残機-1！次のプレイヤーへターンが移ります。'
-                      : card === 'GOOD'
-                      ? `✨ ${targetPlayer.name} はセーフ！次のプレイヤーへ。`
-                      : `💀 ${targetPlayer.name} の残機-1！次のプレイヤーへ。`}
-                  </p>
-                )}
+                <p className="text-xs text-slate-200 mt-2 font-medium leading-relaxed">
+                  {effectiveCard === 'GOOD' ? (
+                    isSelf ? (
+                      '🎉 ターン継続！次のPLAYもあなたの番です。'
+                    ) : (
+                      `✨ ${targetPlayer.name} はセーフ！次のプレイヤーへ。`
+                    )
+                  ) : continued ? (
+                    '🕹️ CONTINUE発動！ BADは無効化されターンを続行します！'
+                  ) : isSelf ? (
+                    '💀 残機-1！次のプレイヤーへターンが移ります。'
+                  ) : (
+                    `💀 ${targetPlayer.name} の残機-1！次のプレイヤーへ。`
+                  )}
+                </p>
               </div>
             </div>
           </div>
@@ -193,7 +211,7 @@ export const CardRevealModal: React.FC<CardRevealModalProps> = ({
               <div className="w-full bg-black/50 border border-amber-600/30 rounded-full h-2.5 overflow-hidden relative">
                 <div
                   className={`h-full transition-all duration-1000 ease-linear rounded-full ${
-                    card === 'GOOD' ? 'bg-cyan-400' : 'bg-rose-500'
+                    effectiveCard === 'GOOD' ? 'bg-cyan-400' : 'bg-rose-500'
                   }`}
                   style={{ width: `${(timeLeft / 3) * 100}%` }}
                 />

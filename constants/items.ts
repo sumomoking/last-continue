@@ -47,7 +47,7 @@ export const ITEM_DEFINITIONS: Record<ItemType, ItemInfo> = {
     id: 'GLITCH',
     name: 'GLITCH',
     icon: '👾',
-    description: 'カードを引く前に使用。このターンで引くステージカードの効果を無効化して破棄します。',
+    description: 'カードを引く前に使用。このターンで引くステージカードの判定を反転させます（GOOD ➔ BAD、BAD ➔ GOOD）。',
     timing: '自分のターン（PLAY前）',
     canUseInTurn: true,
   },

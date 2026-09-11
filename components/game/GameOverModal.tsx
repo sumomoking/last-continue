@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Player } from '../../types/game';
+import { soundManager } from '../../lib/sound';
 
 interface GameOverModalProps {
   winner: Player | undefined;
@@ -16,6 +17,9 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   round,
   onRestart,
 }) => {
+  useEffect(() => {
+    soundManager.playVictory();
+  }, []);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg animate-fade-in">
       <div className="w-full max-w-lg bg-slate-900 border-2 border-yellow-400/80 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(250,204,21,0.3)] text-center relative overflow-hidden">

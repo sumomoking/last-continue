@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { ItemAnnouncement, ItemType } from "@/types/game";
 import { ITEM_DEFINITIONS } from "@/constants/items";
+import { soundManager } from "@/lib/sound";
 
 interface ItemActivationCutinProps {
   announcement?: ItemAnnouncement | null;
@@ -83,6 +84,7 @@ export const ItemActivationCutin: React.FC<ItemActivationCutinProps> = ({
     if (isFresh) {
       setCurrentAnnouncement(announcement);
       setVisible(true);
+      soundManager.playItemUse(announcement.item);
 
       const timer = setTimeout(() => {
         setVisible(false);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { useOnlineRoom } from '../hooks/useOnlineRoom';
 import { SetupScreen } from '../components/game/SetupScreen';
@@ -15,11 +15,17 @@ import { GameOverModal } from '../components/game/GameOverModal';
 import { ActionLogDrawer } from '../components/game/ActionLogDrawer';
 import { ItemActivationCutin } from '../components/game/ItemActivationCutin';
 import { ItemType } from '../types/game';
+import { soundManager } from '../lib/sound';
 
 type PlayMode = 'LOCAL' | 'ONLINE';
 
 export default function GamePage() {
   const [playMode, setPlayMode] = useState<PlayMode>('LOCAL');
+  const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    setIsMuted(soundManager.isMuted());
+  }, []);
 
   // 1. ローカルゲーム用エンジン
   const localEngine = useGameEngine();
@@ -188,10 +194,26 @@ export default function GamePage() {
       )}
 
       {/* Arena Header */}
-      <header className="w-full max-w-4xl text-center pt-1 pb-2 relative z-10">
-        <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-900/90 border border-slate-800 text-[10px] font-mono tracking-widest text-cyan-400 mb-1">
-          {isOnline ? '🌐 ONLINE MULTIPLAYER ARENA' : '🎴 LOCAL PASS & PLAY ARENA'}
+      <header className="w-full max-w-4xl text-center pt-1 pb-2 relative z-10 flex flex-col items-center">
+        <div className="w-full flex items-center justify-between px-2 mb-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-900/90 border border-slate-800 text-[10px] font-mono tracking-widest text-cyan-400">
+            {isOnline ? '🌐 ONLINE MULTIPLAYER ARENA' : '🎴 LOCAL PASS & PLAY ARENA'}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const muted = soundManager.toggleMute();
+              setIsMuted(muted);
+              if (!muted) soundManager.playClick();
+            }}
+            className="px-2.5 py-0.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-[10px] font-mono text-slate-300 hover:text-white transition flex items-center gap-1 shadow-sm cursor-pointer"
+            title={isMuted ? '効果音をONにする' : '効果音をミュートする'}
+          >
+            <span>{isMuted ? '🔇 SOUND: OFF' : '🔊 SOUND: ON'}</span>
+          </button>
         </div>
+
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center justify-center gap-2">
           <span>LAST</span>
           <span className="text-red-500 underline decoration-red-500/50 decoration-4">

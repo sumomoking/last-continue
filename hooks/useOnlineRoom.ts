@@ -550,13 +550,18 @@ export function useOnlineRoom() {
 
       let nextTurnPlayerIndex = prev.currentTurnPlayerIndex;
 
-      // GLITCH発動
+      // ── GLITCH判定によるカード反転 ──
+      const effectiveCard: CardType = prev.glitchedCard ? (card === 'GOOD' ? 'BAD' : 'GOOD') : card;
+
       if (prev.glitchedCard) {
-        addInternalLog(`👾 GLITCH発動！ ${targetPlayer.name} が引いたカードは無効化され捨てられました。`, 'item');
-        nextTurnPlayerIndex = getNextAlivePlayerIndex(actorIdx, playersList);
+        addInternalLog(
+          `👾 GLITCH反転発動！ 引いたカードは「${card}」でしたが【${effectiveCard === 'GOOD' ? 'GOOD STAGE' : 'BAD STAGE'}】に反転しました！`,
+          'item'
+        );
       }
-      // CONTINUE発動
-      else if (prev.continuedCard && card === 'BAD') {
+
+      // ── A. CONTINUE発動の場合 (effectiveCard が BAD の時のみ) ──
+      if (prev.continuedCard && effectiveCard === 'BAD') {
         if (isSelf) {
           addInternalLog(`🕹️ CONTINUE発動！ ${targetPlayer.name} の残機減少は無効化され、ターンを続行します！`, 'item');
           nextTurnPlayerIndex = actorIdx;
@@ -565,8 +570,8 @@ export function useOnlineRoom() {
           nextTurnPlayerIndex = getNextAlivePlayerIndex(actorIdx, playersList);
         }
       }
-      // 通常の GOOD STAGE
-      else if (card === 'GOOD') {
+      // ── B. effectiveCard が GOOD STAGE ──
+      else if (effectiveCard === 'GOOD') {
         if (isSelf) {
           addInternalLog(`🟦 GOOD STAGE！ ${targetPlayer.name} のターンが継続します！`, 'good');
           nextTurnPlayerIndex = actorIdx;
@@ -575,7 +580,7 @@ export function useOnlineRoom() {
           nextTurnPlayerIndex = getNextAlivePlayerIndex(actorIdx, playersList);
         }
       }
-      // 通常の BAD STAGE
+      // ── C. effectiveCard が BAD STAGE ──
       else {
         addInternalLog(`🟥 BAD STAGE！ ${targetPlayer.name} の残機が 1 減少しました！`, 'bad');
         const newLives = targetPlayer.lives - 1;
@@ -824,8 +829,8 @@ export function useOnlineRoom() {
           case 'GLITCH': {
             glitched = true;
             playersList[playerIndex] = { ...player, items: updatedItems };
-            itemAnnouncementMsg = '次に引くカードの効果を無効化して破棄するグリッチを展開！';
-            logItem(`👾 ${player.name} が「GLITCH」を発動！ 次に引くカードを無効化して破棄します！`);
+            itemAnnouncementMsg = '次に引くカードの判定を反転させるグリッチを展開！（GOOD ⇔ BAD）';
+            logItem(`👾 ${player.name} が「GLITCH」を発動！ 次に引くカードの判定を反転（GOOD ⇔ BAD）させます！`);
             break;
           }
         }
