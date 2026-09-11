@@ -37,10 +37,10 @@ export const SaveSelectModal: React.FC<SaveSelectModalProps> = ({
         <div className="inline-block px-3 py-1 bg-amber-500/20 border border-amber-400/40 rounded-full text-xs font-mono font-bold text-amber-300 mb-3 shadow-inner">
           💾 SAVE ITEM（残機1専用・1周有効）
         </div>
-        <h3 className="text-xl font-black text-white mb-2 drop-shadow">保管するアイテムを選択</h3>
         <p className="text-xs text-slate-300 mb-5 leading-relaxed">
           SAVEの下にセットするアイテムを1枚選んでください。<br />
-          <strong className="text-amber-300">自分の手番が1周する間</strong>にGAME OVER（残機0）になった瞬間、そのアイテムが手札に戻り<strong>残機1で復活</strong>します（発動せず手番が回ってきた場合は手札に戻ります）。
+          <strong className="text-amber-300">自分の手番が1周する間</strong>にGAME OVER（残機0）になった瞬間、そのアイテムが手札に戻り<strong>残機1で復活</strong>します。<br />
+          <span className="text-amber-200/80 text-[11px]">※発動せず1周経過した場合はセットカードは<strong>消失</strong>します。また他プレイヤーがSAVEを使うと効果が上書きされ消滅します。</span>
         </p>
 
         {availableItems.length === 0 ? (

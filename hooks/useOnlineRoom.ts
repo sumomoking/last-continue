@@ -616,17 +616,14 @@ export function useOnlineRoom() {
       }
 
       // ── SAVEの1周有効期限チェック ──
-      // 手番が他プレイヤーから移行し、次手番プレイヤーが未発動のSAVEを保持している場合、1周経過として手札に戻す
+      // 手番が他プレイヤーから移行し、次手番プレイヤーが未発動のSAVEを保持している場合、1周経過として消失
       if (nextTurnPlayerIndex !== actorIdx && playersList[nextTurnPlayerIndex]?.savedItem) {
         const expiredItem = playersList[nextTurnPlayerIndex].savedItem!;
-        const currentHand = playersList[nextTurnPlayerIndex].items;
-        const newHand = currentHand.length < MAX_ITEM_COUNT ? [...currentHand, expiredItem] : currentHand;
         playersList[nextTurnPlayerIndex] = {
           ...playersList[nextTurnPlayerIndex],
           savedItem: null,
-          items: newHand,
         };
-        addInternalLog(`💾 ${playersList[nextTurnPlayerIndex].name} のSAVE効果が1周経過して終了しました。セットカード「${expiredItem}」が手札に戻りました。`, 'item');
+        addInternalLog(`💾 ${playersList[nextTurnPlayerIndex].name} のSAVE効果が1周経過して終了しました。セットされていた「${expiredItem}」は消失しました。`, 'item');
       }
 
       // 勝者判定
@@ -688,15 +685,9 @@ export function useOnlineRoom() {
 
       const updatedPlayers = prev.players.map((player) => {
         if (player.isGameOver) return player;
-        let newItems = [...player.items];
-        // もし未発動のSAVEが残っていたら手札に戻す
-        if (player.savedItem) {
-          if (newItems.length < MAX_ITEM_COUNT) {
-            newItems.push(player.savedItem);
-          }
-        }
-        const availableSlots = Math.max(0, MAX_ITEM_COUNT - newItems.length);
+        const availableSlots = Math.max(0, MAX_ITEM_COUNT - player.items.length);
         const drawCount = Math.min(2, availableSlots);
+        let newItems = [...player.items];
         if (drawCount > 0) {
           const { drawn, remaining } = drawItems(drawCount, currentItemDeck);
           currentItemDeck = remaining;
@@ -704,7 +695,7 @@ export function useOnlineRoom() {
         }
         return {
           ...player,
-          savedItem: null,
+          savedItem: null, // 未発動のSAVEはラウンド終了時に消失
           items: newItems,
         };
       });
@@ -809,13 +800,26 @@ export function useOnlineRoom() {
               if (saveItemIdx !== -1) {
                 updatedItems.splice(saveItemIdx, 1);
               }
+
+              // 他プレイヤーが以前に使用していたSAVEがあれば消滅させる
+              playersList = playersList.map((p, pIdx) => {
+                if (pIdx !== playerIndex && p.savedItem) {
+                  logItem(`💾 ${player.name} がSAVEを発動したため、${p.name} のSAVE効果は上書きされ消滅しました！`);
+                  return {
+                    ...p,
+                    savedItem: null,
+                  };
+                }
+                return p;
+              });
+
               playersList[playerIndex] = {
                 ...player,
                 items: updatedItems,
                 savedItem: setToSave,
               };
-              itemAnnouncementMsg = `「${setToSave}」をSAVEスロットにセット！ (ライフ0時に全回復)`;
-              logItem(`💾 ${player.name} が「SAVE」を使用し、「${setToSave}」をセットしました。GAME OVER時に復活します。`);
+              itemAnnouncementMsg = `「${setToSave}」をSAVEスロットにセット！（他者のSAVE消滅 & 1周有効）`;
+              logItem(`💾 ${player.name} が「SAVE」を使用し、「${setToSave}」をセットしました。GAME OVER時に復活します（1周未発動時は消失）。`);
             }
             break;
           }
