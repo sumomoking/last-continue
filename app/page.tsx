@@ -23,7 +23,7 @@ import { ResourceBattleArena } from '../components/resourceBattle/ResourceBattle
 type PlayMode = 'LOCAL' | 'ONLINE';
 
 export default function GamePage() {
-  const [activeGame, setActiveGame] = useState<ActiveGame>('LAST_CONTINUE');
+  const [activeGame, setActiveGame] = useState<ActiveGame>('SENGOKU');
   const [playMode, setPlayMode] = useState<PlayMode>('LOCAL');
   const [isMuted, setIsMuted] = useState(false);
   const [resetModalPlayerIndex, setResetModalPlayerIndex] = useState<number | null>(null);
