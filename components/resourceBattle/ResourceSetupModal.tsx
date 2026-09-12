@@ -6,11 +6,13 @@ import { ResourceCard } from './ResourceCard';
 
 interface ResourceSetupModalProps {
   onStart: (playerCount: number, humanCount: number, playerNames?: string[]) => void;
+  onSelectOnline?: () => void;
   onBackToMenu?: () => void;
 }
 
 export const ResourceSetupModal: React.FC<ResourceSetupModalProps> = ({
   onStart,
+  onSelectOnline,
   onBackToMenu,
 }) => {
   const [playerCount, setPlayerCount] = useState<number>(3);
@@ -43,6 +45,20 @@ export const ResourceSetupModal: React.FC<ResourceSetupModalProps> = ({
 
   return (
     <div className="w-full flex flex-col items-center justify-center p-3 sm:p-6 relative z-10 select-none">
+      {/* Online Mode Switch Button on Top Right */}
+      {onSelectOnline && (
+        <div className="w-full max-w-xl mb-4 flex justify-end z-20">
+          <button
+            type="button"
+            onClick={onSelectOnline}
+            className="px-4 py-2 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black rounded-xl shadow-[0_4px_12px_rgba(217,119,6,0.3)] border border-amber-300/60 transition flex items-center gap-2 cursor-pointer transform hover:scale-105 active:scale-95"
+          >
+            <span>🌐</span>
+            <span>オンライン対戦（部屋作成・参加）➔</span>
+          </button>
+        </div>
+      )}
+
       {/* Main Tabletop Board Frame */}
       <div className="w-full max-w-xl table-wood-rail p-3 sm:p-4 rounded-[28px] shadow-2xl relative z-20 border border-amber-900/40">
         {/* Brass Corner Brackets */}

@@ -16,6 +16,8 @@ import { soundManager } from '../../lib/sound';
 
 interface ResourceTabletopProps {
   state: ResourceGameState;
+  isOnline?: boolean;
+  myPlayerId?: string;
   onStartCardSelection: () => void;
   onSelectCard: (
     playerIndex: number,
@@ -29,6 +31,8 @@ interface ResourceTabletopProps {
 
 export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
   state,
+  isOnline = false,
+  myPlayerId,
   onStartCardSelection,
   onSelectCard,
   onResolveReveals,
@@ -38,8 +42,16 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
   const [targetOpponentId, setTargetOpponentId] = useState<string>('');
   const [targetResource, setTargetResource] = useState<ResourceType>('WOOD');
 
-  const curPlayer = state.players[state.currentSelectingPlayerIndex];
-  const opponents = state.players.filter((_, idx) => idx !== state.currentSelectingPlayerIndex);
+  // オンライン時は自分のプレイヤーIndex、ローカル時は現在の手番Index
+  const myIndex = isOnline
+    ? Math.max(
+        0,
+        state.players.findIndex((p) => p.id === myPlayerId)
+      )
+    : state.currentSelectingPlayerIndex;
+
+  const curPlayer = state.players[myIndex] || state.players[0];
+  const opponents = state.players.filter((_, idx) => idx !== myIndex);
 
   const handleCardClick = (cardType: GameCardType) => {
     soundManager.playCardFlip();
@@ -53,7 +65,7 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
     if (!selectedCard || !curPlayer) return;
     soundManager.playButtonClick();
     onSelectCard(
-      state.currentSelectingPlayerIndex,
+      myIndex,
       selectedCard,
       targetOpponentId || undefined,
       targetResource
@@ -137,7 +149,9 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
       {/* ── 2. Other Players' Mats (Cards In Play & Collected Resource Cards) ── */}
       <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3 relative z-10">
         {state.players.map((p, idx) => {
-          const isCurrent = state.phase === 'CARD_SELECT' && idx === state.currentSelectingPlayerIndex;
+          const isCurrent = !isOnline
+            ? state.phase === 'CARD_SELECT' && idx === state.currentSelectingPlayerIndex
+            : state.phase === 'CARD_SELECT' && p.id === myPlayerId;
           const hasPlayed = p.selectedCard !== null;
           const isRevealed = state.phase === 'REVEAL_ALL' && p.selectedCard !== null;
           const setCount = Math.min(p.resources.WOOD, p.resources.RICE, p.resources.IRON);
@@ -164,8 +178,13 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center space-x-1.5 min-w-0">
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
-                  <span className="font-black text-xs sm:text-sm text-stone-800 truncate">
-                    {p.name}
+                  <span className="font-black text-xs sm:text-sm text-stone-800 truncate flex items-center gap-1">
+                    <span>{p.name}</span>
+                    {isOnline && p.id === myPlayerId && (
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-amber-200 text-amber-900 border border-amber-400 font-normal">
+                        あなた
+                      </span>
+                    )}
                   </span>
                 </div>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300 font-bold text-amber-900">
@@ -183,12 +202,17 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                     <ResourceCard cardType={p.selectedCard} size="sm" />
                   </div>
                 ) : hasPlayed ? (
-                  <div className="animate-fade-in">
+                  <div className="animate-fade-in flex flex-col items-center">
                     <ResourceCard cardType="FOREST" isFaceDown size="sm" />
+                    {isOnline && (
+                      <span className="text-[9px] font-bold text-emerald-700 mt-1">
+                        ✓ 提出済
+                      </span>
+                    )}
                   </div>
                 ) : (
                   <div className="w-20 h-28 border-2 border-dashed border-stone-400/70 rounded-xl flex flex-col items-center justify-center text-stone-500 text-[10px] text-center p-1 font-bold">
-                    {isCurrent ? (
+                    {state.phase === 'CARD_SELECT' ? (
                       <span className="text-amber-700 font-black animate-pulse">
                         🎴 選択中...
                       </span>
@@ -472,6 +496,19 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
         )}
 
         {state.phase === 'CARD_SELECT' && curPlayer && (
+          isOnline && curPlayer.selectedCard !== null ? (
+            <div className="text-center py-6 animate-fade-in">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-900/60 border border-emerald-500/50 text-emerald-300 font-bold text-xs mb-3 shadow-inner">
+                <span>✓ カードを伏せて場に出しました</span>
+              </div>
+              <h3 className="text-lg font-black text-stone-800 mb-1">
+                他のプレイヤーのカード選択を待っています...
+              </h3>
+              <p className="text-xs text-stone-500">
+                全員がカードを出し終えると、自動的に「一斉オープン」に進みます。
+              </p>
+            </div>
+          ) : (
           <div className="flex flex-col items-center">
             {/* Header Hand Banner */}
             <div className="w-full flex items-center justify-between mb-3 pb-2 border-b border-stone-300">
@@ -590,6 +627,7 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                 : '手札から出したいカードを選んでください'}
             </button>
           </div>
+          )
         )}
       </div>
     </div>
