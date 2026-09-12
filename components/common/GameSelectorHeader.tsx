@@ -19,24 +19,27 @@ export const GameSelectorHeader: React.FC<GameSelectorHeaderProps> = ({
   onToggleMute,
 }) => {
   return (
-    <header className="w-full max-w-5xl mx-auto flex items-center justify-between px-3 py-2 bg-slate-950/80 border border-slate-800/80 rounded-2xl backdrop-blur-md shadow-md mb-3 select-none">
+    <header className="w-full max-w-5xl mx-auto flex items-center justify-between px-3.5 py-2.5 school-chalkboard border-3 border-amber-800 rounded-2xl shadow-xl mb-3 select-none relative overflow-hidden">
+      {/* Chalkboard Dust Accent */}
+      <div className="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] bg-[size:10px_10px] pointer-events-none" />
+
       {/* Game Selector Tabs */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 relative z-10">
         <button
           type="button"
           onClick={() => {
             soundManager.playButtonClick();
             onSelectGame('LAST_CONTINUE');
           }}
-          className={`px-3.5 py-1.5 rounded-xl font-bold font-mono text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
+          className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
             activeGame === 'LAST_CONTINUE'
-              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_15px_rgba(6,182,212,0.4)] scale-102'
-              : 'bg-slate-900/90 text-slate-400 hover:text-slate-200 border border-slate-800'
+              ? 'bg-amber-100 text-stone-900 border-2 border-amber-300 shadow-[0_2px_8px_rgba(0,0,0,0.4)] scale-102 font-black'
+              : 'bg-emerald-950/70 text-emerald-200 hover:text-white border border-emerald-700/60'
           }`}
         >
           <span>🃏</span>
           <span>LAST CONTINUE</span>
-          <span className="hidden sm:inline text-[10px] opacity-75">(チキンレース)</span>
+          <span className="hidden sm:inline text-[10px] opacity-80">(放課後チキンレース)</span>
         </button>
 
         <button
@@ -45,31 +48,31 @@ export const GameSelectorHeader: React.FC<GameSelectorHeaderProps> = ({
             soundManager.playButtonClick();
             onSelectGame('SENGOKU');
           }}
-          className={`px-3.5 py-1.5 rounded-xl font-bold font-mono text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
+          className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
             activeGame === 'SENGOKU'
-              ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.5)] scale-102'
-              : 'bg-slate-900/90 text-slate-400 hover:text-slate-200 border border-slate-800'
+              ? 'bg-amber-100 text-stone-900 border-2 border-amber-300 shadow-[0_2px_8px_rgba(0,0,0,0.4)] scale-102 font-black'
+              : 'bg-emerald-950/70 text-emerald-200 hover:text-white border border-emerald-700/60'
           }`}
         >
           <span>🌲</span>
           <span>資源争奪戦 (森・畑・鉱山)</span>
-          <span className="hidden sm:inline text-[10px] opacity-90 font-sans font-bold">✨ NEW</span>
+          <span className="hidden sm:inline text-[10px] text-amber-300 font-bold">✨ NEW</span>
         </button>
       </div>
 
       {/* Sound Mute Toggle */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 relative z-10">
         <button
           type="button"
           onClick={onToggleMute}
           title={isMuted ? 'サウンドをオン' : 'サウンドをミュート'}
-          className={`p-2 rounded-xl text-xs font-mono transition border cursor-pointer ${
+          className={`px-2.5 py-1.5 rounded-xl text-xs font-mono transition border cursor-pointer ${
             isMuted
-              ? 'bg-red-950/40 border-red-500/40 text-red-400 hover:bg-red-900/60'
-              : 'bg-slate-900/80 border-slate-800 text-emerald-400 hover:bg-slate-800'
+              ? 'bg-red-950/60 border-red-500/50 text-red-300 hover:bg-red-900/60'
+              : 'bg-emerald-900/80 border-emerald-600/60 text-emerald-300 hover:bg-emerald-800'
           }`}
         >
-          {isMuted ? '🔇 消音中' : '🔊 音声ON'}
+          {isMuted ? '🔇 消音' : '🔔 効果音ON'}
         </button>
       </div>
     </header>

@@ -69,7 +69,7 @@ export const ResourceRoundSummaryModal: React.FC<ResourceRoundSummaryModalProps>
                   {hasGained ? (
                     <div className="flex items-center gap-1.5 font-bold text-amber-300">
                       {gained.WOOD > 0 && <span>🪵 木+{gained.WOOD}</span>}
-                      {gained.RICE > 0 && <span>🌾 米+{gained.RICE}</span>}
+                      {gained.RICE > 0 && <span>🌾 小麦+{gained.RICE}</span>}
                       {gained.IRON > 0 && <span>⚙️ 鉄+{gained.IRON}</span>}
                     </div>
                   ) : (
@@ -81,7 +81,7 @@ export const ResourceRoundSummaryModal: React.FC<ResourceRoundSummaryModalProps>
                   <span className="text-slate-500">所持累計:</span>
                   <div className="flex items-center gap-2">
                     <span className="text-emerald-300">🪵 木:{player.resources.WOOD}</span>
-                    <span className="text-amber-300">🌾 米:{player.resources.RICE}</span>
+                    <span className="text-amber-300">🌾 小麦:{player.resources.RICE}</span>
                     <span className="text-cyan-300">⚙️ 鉄:{player.resources.IRON}</span>
                   </div>
                 </div>

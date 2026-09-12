@@ -34,11 +34,11 @@ export const ResourceScoreModal: React.FC<ResourceScoreModalProps> = ({
         <div className="grid grid-cols-2 gap-2 p-3 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-200 mb-6">
           <div className="text-left">
             <span className="text-amber-400 font-bold">① セットによるポイント</span>: <br />
-            「木・米・鉄」1セットにつき <strong>1ポイント</strong>
+            「木・小麦・鉄」1セットにつき <strong>1ポイント</strong>
           </div>
           <div className="text-left">
             <span className="text-cyan-400 font-bold">② 各資源の最多所持ボーナス</span>: <br />
-            木・米・鉄の各最多プレイヤーに <strong>各2ポイント</strong>
+            木・小麦・鉄の各最多プレイヤーに <strong>各2ポイント</strong>
           </div>
         </div>
 
@@ -83,7 +83,7 @@ export const ResourceScoreModal: React.FC<ResourceScoreModalProps> = ({
                     </div>
                     <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2 mt-0.5">
                       <span>🪵 木:{s.woodCount}</span>
-                      <span>🌾 米:{s.riceCount}</span>
+                      <span>🌾 小麦:{s.riceCount}</span>
                       <span>⚙️ 鉄:{s.ironCount}</span>
                       <span className="text-amber-300 font-bold">({s.setCount}セット)</span>
                     </div>

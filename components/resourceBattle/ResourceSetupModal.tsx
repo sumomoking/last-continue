@@ -32,7 +32,7 @@ export const ResourceSetupModal: React.FC<ResourceSetupModalProps> = ({
         </h2>
         <p className="text-xs sm:text-sm text-slate-300 mb-6 leading-relaxed">
           全プレイヤーに「森」「畑」「鉱山」とイベントカードを配り、<br />
-          場の「木」「米」「鉄」を奪い合ってポイントを競います。
+          場の「木」「小麦」「鉄」を奪い合ってポイントを競います。
         </p>
 
         <div className="mb-6 text-left">

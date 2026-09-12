@@ -275,7 +275,7 @@ export function useResourceBattleEngine() {
         if (!actor) return;
 
         if (ev.card === 'ALL_AREAS') {
-          // 全エリアの選択: 木・米・鉄を1つずつ獲得
+          // 全エリアの選択: 木・小麦・鉄を1つずつ獲得
           actor.resources.WOOD += 1;
           actor.resources.RICE += 1;
           actor.resources.IRON += 1;
@@ -283,7 +283,7 @@ export function useResourceBattleEngine() {
           logs.push({
             id: `log-ev-${Date.now()}-${actor.id}`,
             round: prev.round,
-            message: `🌟 【全エリアの選択】${actor.name}が「木・米・鉄」を1つずつ獲得しました！`,
+            message: `🌟 【全エリアの選択】${actor.name}が「木・小麦・鉄」を1つずつ獲得しました！`,
             type: 'EVENT',
             timestamp: new Date().toLocaleTimeString(),
           });
@@ -291,7 +291,7 @@ export function useResourceBattleEngine() {
           // 資源を奪う: 特定プレイヤーから指定資源を1つ奪う
           const target = players.find((p) => p.id === ev.targetPlayerId);
           const res = ev.targetResource || 'WOOD';
-          const resName = res === 'WOOD' ? '木' : res === 'RICE' ? '米' : '鉄';
+          const resName = res === 'WOOD' ? '木' : res === 'RICE' ? '小麦' : '鉄';
           if (target && target.resources[res] > 0) {
             target.resources[res] -= 1;
             actor.resources[res] += 1;
@@ -322,7 +322,7 @@ export function useResourceBattleEngine() {
             const actorRoll = Math.floor(Math.random() * 6) + 1;
             const targetRoll = Math.floor(Math.random() * 6) + 1;
             const res = ev.targetResource || 'WOOD';
-            const resName = res === 'WOOD' ? '木' : res === 'RICE' ? '米' : '鉄';
+            const resName = res === 'WOOD' ? '木' : res === 'RICE' ? '小麦' : '鉄';
 
             if (actorRoll >= targetRoll && target.resources[res] > 0) {
               target.resources[res] -= 1;
@@ -370,7 +370,7 @@ export function useResourceBattleEngine() {
         const group = locationGroups[loc];
         const cardInfo = GAME_CARDS[loc];
         const targetRes = cardInfo.targetResource!;
-        const resName = targetRes === 'WOOD' ? '木' : targetRes === 'RICE' ? '米' : '鉄';
+        const resName = targetRes === 'WOOD' ? '木' : targetRes === 'RICE' ? '小麦' : '鉄';
 
         if (group.length === 1) {
           // 単独: 対応する資源を1つ獲得
@@ -503,7 +503,7 @@ export function useResourceBattleEngine() {
     const breakdowns: ScoreSummary[] = players.map((p) => {
       const { WOOD, RICE, IRON } = p.resources;
 
-      // 1. セットによるポイント: 「木・米・鉄」1セットにつき1ポイント
+      // 1. セットによるポイント: 「木・小麦・鉄」1セットにつき1ポイント
       const setCount = Math.min(WOOD, RICE, IRON);
       const setPoints = setCount * 1; // 1セット = 1P
 

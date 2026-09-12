@@ -1,11 +1,11 @@
 // Types for Resource Battling Card Game (Exact Rules as Specified)
 
-export type ResourceType = 'WOOD' | 'RICE' | 'IRON'; // 木, 米, 鉄
+export type ResourceType = 'WOOD' | 'RICE' | 'IRON'; // 木, 小麦, 鉄
 
-export type LocationCardType = 'FOREST' | 'FIELD' | 'MINE'; // 森 (木), 畑 (米), 鉱山 (鉄)
+export type LocationCardType = 'FOREST' | 'FIELD' | 'MINE'; // 森 (木), 畑 (小麦), 鉱山 (鉄)
 
 export type EventCardType = 
-  | 'ALL_AREAS'      // 全エリアの選択: 全てのエリアから「木・米・鉄」を1つずつ獲得
+  | 'ALL_AREAS'      // 全エリアの選択: 全てのエリアから「木・小麦・鉄」を1つずつ獲得
   | 'STEAL_RESOURCE' // 資源を奪う: 特定のプレイヤーを指定し、指定された資源を1つ奪う
   | 'CHALLENGE'      // 特定のプレイヤーと戦う: 指定プレイヤーとサイコロ戦闘、勝者が相手から資源を奪う
   | 'DICE_PLUS_TWO'  // 出目＋2: 戦闘時、自分の出目に＋2の補正
@@ -32,7 +32,7 @@ export interface BattlePlayer {
   colorBadge: string;
   resources: {
     WOOD: number; // 木
-    RICE: number; // 米
+    RICE: number; // 小麦
     IRON: number; // 鉄
   };
   locationCards: LocationCardType[]; // 「森」「畑」「鉱山」
@@ -73,11 +73,11 @@ export interface ScoreSummary {
   woodCount: number;
   riceCount: number;
   ironCount: number;
-  setCount: number; // 「木・米・鉄」1セットにつき1P
+  setCount: number; // 「木・小麦・鉄」1セットにつき1P
   setPoints: number; // 1セット = 1P
   majorityBonuses: {
     wood: boolean; // 木の最多所持 (+2P)
-    rice: boolean; // 米の最多所持 (+2P)
+    rice: boolean; // 小麦の最多所持 (+2P)
     iron: boolean; // 鉄の最多所持 (+2P)
   };
   majorityPoints: number; // 各最多 = 2P

@@ -91,23 +91,20 @@ export const TabletopBoard: React.FC<TabletopBoardProps> = ({
 
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col items-center gap-4 select-none">
-      {/* ── Table Top Outer Frame (Wood & Felt Board) ── */}
-      <div className="w-full relative table-wood-rail rounded-[2rem] sm:rounded-[2.5rem] p-3 sm:p-5 shadow-[0_20px_50px_rgba(0,0,0,0.85)] border-4 border-amber-900/70 overflow-hidden">
-        {/* Brass corner brackets */}
-        <div className="absolute top-2.5 left-2.5 w-6 h-6 border-t-2 border-l-2 border-amber-300/40 rounded-tl-lg pointer-events-none" />
-        <div className="absolute top-2.5 right-2.5 w-6 h-6 border-t-2 border-r-2 border-amber-300/40 rounded-tr-xl pointer-events-none" />
-        <div className="absolute bottom-2.5 left-2.5 w-6 h-6 border-b-2 border-l-2 border-amber-300/40 rounded-bl-xl pointer-events-none" />
-        <div className="absolute bottom-2.5 right-2.5 w-6 h-6 border-b-2 border-r-2 border-amber-300/40 rounded-br-lg pointer-events-none" />
+      {/* ── Classroom Wooden Desk Top Frame ── */}
+      <div className="w-full relative school-desk-wood rounded-[2rem] sm:rounded-[2.5rem] p-3 sm:p-5 shadow-[0_20px_50px_rgba(0,0,0,0.85)] border-4 border-[#875c2e] overflow-hidden">
+        {/* Pencil Groove Accent (机の上の鉛筆溝) */}
+        <div className="absolute top-2 left-12 right-12 h-1 bg-black/20 rounded-full shadow-inner pointer-events-none" />
 
-        {/* ── Tabletop Felt Surface (Center Field) ── */}
-        <div className="w-full relative tabletop-surface rounded-3xl p-3 sm:p-5 flex flex-col gap-3.5 border-2 border-emerald-600/40 shadow-[inset_0_0_60px_rgba(0,0,0,0.7)]">
-          {/* Top Status Bar: Clean Round Info without Spoilers */}
-          <div className="w-full flex items-center justify-between z-10 px-1 border-b border-emerald-500/20 pb-2">
-            <div className="px-3.5 py-1 bg-slate-950/85 border border-amber-400/50 rounded-full shadow-md flex items-center gap-1.5 text-xs font-mono font-black text-amber-300">
-              <span>🏆 ROUND {round}</span>
+        {/* ── Tabletop Desk Mat Surface (Center Field) ── */}
+        <div className="w-full relative rounded-3xl p-3 sm:p-5 flex flex-col gap-3.5 border-2 border-emerald-800/60 bg-gradient-to-b from-[#163323] via-[#0f2419] to-[#0a1811] shadow-[inset_0_0_60px_rgba(0,0,0,0.6)]">
+          {/* Top Status Bar: Clean Round Info */}
+          <div className="w-full flex items-center justify-between z-10 px-1 border-b border-emerald-600/30 pb-2">
+            <div className="px-3.5 py-1 bg-stone-900/90 border border-amber-400/50 rounded-full shadow-md flex items-center gap-1.5 text-xs font-mono font-black text-amber-300">
+              <span>🏫 放課後 第 {round} 回戦</span>
             </div>
-            <div className="text-[11px] font-mono text-emerald-300/80 font-bold">
-              <span>🎴 STAGE DECK</span>
+            <div className="text-[11px] font-mono text-emerald-300 font-bold flex items-center gap-1">
+              <span>🎴 山札 (STAGE DECK)</span>
             </div>
           </div>
 

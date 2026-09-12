@@ -69,23 +69,26 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
   const maxIron = Math.max(...state.players.map((p) => p.resources.IRON), 1);
 
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col justify-between min-h-[90vh] p-2 sm:p-4 text-slate-100 select-none">
-      {/* ── 1. Top Bar: Turn Count & Step Flow ── */}
-      <div className="w-full bg-slate-900/95 border border-slate-700/80 rounded-2xl p-3 shadow-xl backdrop-blur-md mb-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800">
+    <div className="w-full max-w-6xl mx-auto flex flex-col justify-between min-h-[90vh] p-3 sm:p-5 school-desk-wood rounded-[2rem] sm:rounded-[2.5rem] border-4 border-[#875c2e] shadow-2xl text-stone-900 select-none relative overflow-hidden">
+      {/* Pencil Groove Accent */}
+      <div className="absolute top-2 left-16 right-16 h-1 bg-black/20 rounded-full shadow-inner pointer-events-none" />
+
+      {/* ── 1. Top Bar: Chalkboard / Notebook Step Guide ── */}
+      <div className="w-full school-chalkboard border-2 border-[#5c3a1e] rounded-2xl p-3 shadow-lg mb-3 text-white relative z-10">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-emerald-700/60">
           <div className="flex items-center space-x-3">
-            <span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 font-mono font-black text-sm">
-              ターン {state.round} / {state.maxRounds}
+            <span className="px-3 py-1 rounded-full bg-amber-400 text-stone-950 font-black text-xs sm:text-sm shadow">
+              🏫 放課後 ターン {state.round} / {state.maxRounds}
             </span>
-            <span className="text-sm font-bold text-white hidden sm:inline">
-              🃏 資源争奪カードゲーム（森・畑・鉱山）
+            <span className="text-sm font-bold text-amber-200 hidden sm:inline font-serif">
+              🌲 資源争奪カードゲーム（机の上の対決）
             </span>
           </div>
 
           <button
             type="button"
             onClick={onResetGame}
-            className="text-xs font-mono text-slate-400 hover:text-slate-200 transition cursor-pointer px-2 py-1 rounded bg-slate-800 hover:bg-slate-700"
+            className="text-xs font-mono text-emerald-200 hover:text-white transition cursor-pointer px-2.5 py-1 rounded bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/80"
           >
             ↺ 最初からやり直す
           </button>
@@ -96,8 +99,8 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
           <div
             className={`p-1.5 rounded-xl transition ${
               state.phase === 'CARD_SELECT' || state.phase === 'ROUND_START'
-                ? 'bg-amber-500/30 text-amber-300 border border-amber-400/50 shadow'
-                : 'bg-slate-800/40 text-slate-500'
+                ? 'bg-amber-300 text-stone-950 font-black shadow-md'
+                : 'bg-emerald-950/60 text-emerald-400/80'
             }`}
           >
             ① 手札から1枚伏せて出す
@@ -105,8 +108,8 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
           <div
             className={`p-1.5 rounded-xl transition ${
               state.phase === 'REVEAL_ALL'
-                ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-400/50 shadow animate-pulse'
-                : 'bg-slate-800/40 text-slate-500'
+                ? 'bg-amber-300 text-stone-950 font-black shadow-md animate-pulse'
+                : 'bg-emerald-950/60 text-emerald-400/80'
             }`}
           >
             ② せーので一斉オープン！
@@ -114,17 +117,17 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
           <div
             className={`p-1.5 rounded-xl transition ${
               state.phase === 'BATTLE_RESOLUTION' || state.phase === 'ROUND_SUMMARY'
-                ? 'bg-red-500/30 text-red-300 border border-red-400/50 shadow'
-                : 'bg-slate-800/40 text-slate-500'
+                ? 'bg-amber-300 text-stone-950 font-black shadow-md'
+                : 'bg-emerald-950/60 text-emerald-400/80'
             }`}
           >
-            ③ 資源獲得・サイコロ戦闘
+            ③ 資源獲得・サイコロ勝負
           </div>
         </div>
       </div>
 
-      {/* ── 2. Real-time Player Status & Resource Inventory HUD ── */}
-      <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3">
+      {/* ── 2. Real-time Player Status: Student Desk Sticky Notes ── */}
+      <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3 relative z-10">
         {state.players.map((p, idx) => {
           const isCurrent = state.phase === 'CARD_SELECT' && idx === state.currentSelectingPlayerIndex;
           const hasPlayed = p.selectedCard !== null;
@@ -140,27 +143,30 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
             <div
               key={p.id}
               className={`
-                rounded-2xl p-3 border-2 transition-all flex flex-col justify-between shadow-md relative
+                rounded-2xl p-3 border-2 transition-all flex flex-col justify-between shadow-md relative bg-[#fffdf0] text-stone-900
                 ${
                   isCurrent
-                    ? 'bg-slate-900 border-amber-400 ring-2 ring-amber-400/40'
-                    : 'bg-slate-950/90 border-slate-800'
+                    ? 'border-amber-500 ring-4 ring-amber-400/60 shadow-lg'
+                    : 'border-stone-300/80'
                 }
               `}
             >
+              {/* Tape Accent */}
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-12 h-3.5 school-tape rounded-sm rotate-1 pointer-events-none" />
+
               {/* Player Name & Play Status */}
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="font-bold text-xs sm:text-sm text-white truncate">
+              <div className="flex items-center justify-between mb-1.5 mt-0.5">
+                <div className="font-black text-xs sm:text-sm text-stone-800 truncate">
                   {p.name}
                 </div>
                 {state.phase === 'CARD_SELECT' && (
                   <span
                     className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
                       hasPlayed
-                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/50'
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                         : isCurrent
-                        ? 'bg-amber-950 text-amber-300 border border-amber-500/50 animate-pulse'
-                        : 'bg-slate-800 text-slate-400'
+                        ? 'bg-amber-200 text-amber-900 border border-amber-400 animate-pulse'
+                        : 'bg-stone-200 text-stone-600'
                     }`}
                   >
                     {hasPlayed ? '✓ 出した' : isCurrent ? '▶ 選択中' : '待機'}
@@ -170,37 +176,37 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
 
               {/* Resources Inventory */}
               <div className="grid grid-cols-3 gap-1 my-1 text-center font-mono">
-                <div className="p-1 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300">
-                  <div className="text-[10px] text-slate-400 font-sans">木</div>
+                <div className="p-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
+                  <div className="text-[10px] text-stone-500 font-sans font-bold">木</div>
                   <div className="font-black text-sm">{p.resources.WOOD}</div>
                 </div>
-                <div className="p-1 rounded-lg bg-amber-950/60 border border-amber-500/30 text-amber-300">
-                  <div className="text-[10px] text-slate-400 font-sans">米</div>
+                <div className="p-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
+                  <div className="text-[10px] text-stone-500 font-sans font-bold">小麦</div>
                   <div className="font-black text-sm">{p.resources.RICE}</div>
                 </div>
-                <div className="p-1 rounded-lg bg-cyan-950/60 border border-cyan-500/30 text-cyan-300">
-                  <div className="text-[10px] text-slate-400 font-sans">鉄</div>
+                <div className="p-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800">
+                  <div className="text-[10px] text-stone-500 font-sans font-bold">鉄</div>
                   <div className="font-black text-sm">{p.resources.IRON}</div>
                 </div>
               </div>
 
               {/* Set & Points Summary */}
-              <div className="pt-1 mt-1 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono">
-                <span className="text-slate-400">セット: <strong className="text-amber-300">{setCount}組({setCount}P)</strong></span>
-                <span className="text-amber-400 font-black">計: {currentTotalPts}P</span>
+              <div className="pt-1 mt-1 border-t border-stone-200 flex items-center justify-between text-[11px] font-mono">
+                <span className="text-stone-600">セット: <strong className="text-amber-700">{setCount}組({setCount}P)</strong></span>
+                <span className="text-stone-900 font-black">計: {currentTotalPts}P</span>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* ── 3. Center Battle Ground: The 3 Resource Gathering Pools ── */}
-      <div className="w-full bg-slate-950/90 border-2 border-slate-800 rounded-3xl p-4 sm:p-5 shadow-2xl my-2 relative">
+      {/* ── 3. Center Battle Ground: Classroom Desk Mat ── */}
+      <div className="w-full bg-[#1b3d2b] border-2 border-[#12281c] rounded-3xl p-4 sm:p-5 shadow-inner my-2 text-white relative z-10">
         <div className="text-center mb-3">
-          <h3 className="text-sm sm:text-base font-black text-amber-300 flex items-center justify-center gap-2">
-            <span>🏛️ 場の中央（3つの資源獲得エリア）</span>
+          <h3 className="text-sm sm:text-base font-black text-amber-200 flex items-center justify-center gap-2">
+            <span>🏫 机の中央（3つの資源獲得エリア）</span>
           </h3>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-emerald-200/80">
             出されたカードが集まる場所です。被ったら「戦（戦闘）」になり、サイコロ勝者が2個総取り！
           </p>
         </div>
@@ -224,15 +230,15 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                   rounded-2xl p-4 border-2 flex flex-col justify-between transition-all duration-300 min-h-[160px]
                   ${
                     isConflict
-                      ? 'bg-red-950/40 border-red-500 ring-2 ring-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.3)]'
+                      ? 'bg-red-950/80 border-red-400 ring-2 ring-red-400/50 shadow-lg'
                       : isSolo
-                      ? 'bg-emerald-950/40 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-                      : 'bg-slate-900/80 border-slate-800'
+                      ? 'bg-emerald-900/80 border-emerald-400 shadow-md'
+                      : 'bg-emerald-950/60 border-emerald-800/80'
                   }
                 `}
               >
                 {/* Zone Header */}
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <div className="flex items-center justify-between pb-2 border-b border-emerald-800">
                   <div className="flex items-center space-x-1.5">
                     <span className="text-xl">{card.icon}</span>
                     <span className="font-black text-sm text-white">【{card.name}】</span>
@@ -240,7 +246,7 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                   <span
                     className={`px-2 py-0.5 rounded text-xs font-bold border ${targetRes.bgBadge} ${targetRes.textBadge} ${targetRes.borderBadge}`}
                   >
-                    得られる資源: {targetRes.icon} {targetRes.name}
+                    獲得: {targetRes.icon} {targetRes.name}
                   </span>
                 </div>
 
@@ -324,14 +330,14 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
         )}
       </div>
 
-      {/* ── 4. Bottom Player Controls: Your Hand & Card Selection ── */}
-      <div className="w-full bg-slate-900/95 border-2 border-slate-800 rounded-3xl p-4 sm:p-5 shadow-2xl mt-2">
+      {/* ── 4. Bottom Player Controls: Your Hand on the Wooden Desk ── */}
+      <div className="w-full bg-[#fdfbf7] border-2 border-[#b58c58] rounded-3xl p-4 sm:p-5 shadow-xl mt-2 text-stone-900 relative z-10">
         {state.phase === 'ROUND_START' && (
           <div className="text-center py-4">
-            <h3 className="text-xl sm:text-2xl font-black text-amber-300 mb-2">
+            <h3 className="text-xl sm:text-2xl font-black text-amber-900 mb-2 font-serif">
               第 {state.round} ターン開始
             </h3>
-            <p className="text-xs sm:text-sm text-slate-300 mb-5">
+            <p className="text-xs sm:text-sm text-stone-600 mb-5">
               手札から「森」「畑」「鉱山」またはイベントカードから1枚を選んで裏向きで場に出します。
             </p>
             <button
@@ -340,7 +346,7 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                 soundManager.playButtonClick();
                 onStartCardSelection();
               }}
-              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 text-slate-950 font-black text-base shadow-lg transition transform hover:scale-105 active:scale-95 cursor-pointer"
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 text-stone-950 font-black text-base shadow-lg transition transform hover:scale-105 active:scale-95 cursor-pointer"
             >
               🃏 手札からカードを出す（選択開始）
             </button>
@@ -350,12 +356,12 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
         {state.phase === 'CARD_SELECT' && curPlayer && (
           <div className="flex flex-col items-center">
             {/* Header prompt */}
-            <div className="w-full flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+            <div className="w-full flex items-center justify-between mb-3 pb-2 border-b border-stone-200">
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-mono text-amber-400 font-bold">▶ 出すプレイヤー:</span>
-                <span className="font-black text-sm sm:text-base text-white">{curPlayer.name}</span>
+                <span className="text-xs font-bold text-amber-800">▶ 出すプレイヤー:</span>
+                <span className="font-black text-sm sm:text-base text-stone-900">{curPlayer.name}</span>
               </div>
-              <div className="text-xs font-bold text-amber-300">
+              <div className="text-xs font-bold text-amber-800">
                 出したいカードを1枚クリックしてください 👇
               </div>
             </div>
@@ -387,14 +393,14 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
 
             {/* Event Targeting Controls (if needed) */}
             {selectedCard && GAME_CARDS[selectedCard].category === 'EVENT' && (
-              <div className="w-full max-w-md p-3 rounded-2xl bg-purple-950/50 border border-purple-500/50 my-3 text-left">
-                <div className="text-xs font-bold text-purple-300 mb-2">
+              <div className="w-full max-w-md p-3 rounded-2xl bg-purple-50 border border-purple-300 my-3 text-left">
+                <div className="text-xs font-bold text-purple-900 mb-2">
                   ⚡ イベントカードの対象指定:
                 </div>
 
                 {(selectedCard === 'STEAL_RESOURCE' || selectedCard === 'CHALLENGE') && (
                   <div className="mb-2">
-                    <label className="block text-[11px] text-slate-300 mb-1">
+                    <label className="block text-[11px] text-stone-700 mb-1">
                       対象プレイヤーを選択:
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -405,8 +411,8 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                           onClick={() => setTargetOpponentId(opp.id)}
                           className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
                             targetOpponentId === opp.id
-                              ? 'bg-purple-600 text-white ring-2 ring-purple-400'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                              ? 'bg-purple-600 text-white shadow'
+                              : 'bg-stone-200 text-stone-700 hover:bg-stone-300'
                           }`}
                         >
                           {opp.name}
@@ -418,7 +424,7 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
 
                 {selectedCard === 'STEAL_RESOURCE' && (
                   <div>
-                    <label className="block text-[11px] text-slate-300 mb-1">
+                    <label className="block text-[11px] text-stone-700 mb-1">
                       奪う資源を選択:
                     </label>
                     <div className="flex gap-2">
@@ -431,8 +437,8 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                             onClick={() => setTargetResource(res)}
                             className={`flex-1 py-1 px-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                               targetResource === res
-                                ? `${conf.bgBadge} ${conf.textBadge} ring-2 ring-amber-400 border border-amber-400`
-                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                ? 'bg-amber-400 text-stone-950 ring-2 ring-amber-600'
+                                : 'bg-stone-200 text-stone-700 hover:bg-stone-300'
                             }`}
                           >
                             {conf.icon} 【{conf.name}】
@@ -454,8 +460,8 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                 mt-3 px-8 py-3.5 rounded-2xl font-black text-base transition-all transform
                 ${
                   selectedCard
-                    ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.6)] hover:scale-105 active:scale-95 cursor-pointer'
-                    : 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                    ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 text-stone-950 shadow-[0_4px_15px_rgba(245,158,11,0.5)] hover:scale-105 active:scale-95 cursor-pointer'
+                    : 'bg-stone-300 text-stone-500 cursor-not-allowed'
                 }
               `}
             >
