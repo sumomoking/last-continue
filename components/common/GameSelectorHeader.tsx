@@ -47,13 +47,13 @@ export const GameSelectorHeader: React.FC<GameSelectorHeaderProps> = ({
           }}
           className={`px-3.5 py-1.5 rounded-xl font-bold font-mono text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
             activeGame === 'SENGOKU'
-              ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.5)] scale-102'
+              ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.5)] scale-102'
               : 'bg-slate-900/90 text-slate-400 hover:text-slate-200 border border-slate-800'
           }`}
         >
-          <span>⚔️</span>
-          <span>戦国プロトコル</span>
-          <span className="hidden sm:inline text-[10px] opacity-90 font-sans font-bold">✨ NEW (バッティング資源戦)</span>
+          <span>🌲</span>
+          <span>資源争奪戦 (森・畑・鉱山)</span>
+          <span className="hidden sm:inline text-[10px] opacity-90 font-sans font-bold">✨ NEW</span>
         </button>
       </div>
 

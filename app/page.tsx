@@ -18,7 +18,7 @@ import { ItemActivationCutin } from '../components/game/ItemActivationCutin';
 import { ItemType } from '../types/game';
 import { soundManager } from '../lib/sound';
 import { GameSelectorHeader, ActiveGame } from '../components/common/GameSelectorHeader';
-import { SengokuArena } from '../components/sengoku/SengokuArena';
+import { ResourceBattleArena } from '../components/resourceBattle/ResourceBattleArena';
 
 type PlayMode = 'LOCAL' | 'ONLINE';
 
@@ -167,7 +167,7 @@ export default function GamePage() {
             setIsMuted(muted);
           }}
         />
-        <SengokuArena />
+        <ResourceBattleArena />
       </main>
     );
   }
