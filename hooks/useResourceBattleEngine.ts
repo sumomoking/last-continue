@@ -41,48 +41,56 @@ export function useResourceBattleEngine() {
   const logCounter = useRef(1);
 
   // 1. ゲーム初期化
-  const initGame = useCallback((playerCount: number = 3, humanCount: number = 1) => {
-    const players: BattlePlayer[] = [];
+  const initGame = useCallback(
+    (
+      playerCount: number = 3,
+      humanCount: number = 1,
+      playerNames?: string[]
+    ) => {
+      const players: BattlePlayer[] = [];
 
-    const getRandomEvents = (): EventCardType[] => {
-      const pool = [...ALL_EVENTS];
-      const selected: EventCardType[] = [];
-      for (let i = 0; i < 2; i++) {
-        const randIdx = Math.floor(Math.random() * pool.length);
-        selected.push(pool[randIdx]);
+      const getRandomEvents = (): EventCardType[] => {
+        const pool = [...ALL_EVENTS];
+        const selected: EventCardType[] = [];
+        for (let i = 0; i < 2; i++) {
+          const randIdx = Math.floor(Math.random() * pool.length);
+          selected.push(pool[randIdx]);
+        }
+        return selected;
+      };
+
+      for (let i = 0; i < playerCount; i++) {
+        const isCpu = i >= humanCount;
+        const config = PLAYER_CONFIGS[i % PLAYER_CONFIGS.length];
+        const customName = playerNames?.[i]?.trim();
+        const defaultName = isCpu
+          ? `CPU ${i + 1}`
+          : humanCount === 1 && i === 0
+          ? 'プレイヤー1'
+          : `プレイヤー${i + 1}`;
+
+        players.push({
+          id: `player-${i + 1}`,
+          name: customName || defaultName,
+          isCpu,
+          colorBadge: config.colorBadge,
+          resources: { WOOD: 0, RICE: 0, IRON: 0 },
+          locationCards: [...ALL_LOCATIONS], // 「森」「畑」「鉱山」
+          eventCards: getRandomEvents(),     // イベントカード
+          selectedCard: null,
+          lastGainedResources: { WOOD: 0, RICE: 0, IRON: 0 },
+        });
       }
-      return selected;
-    };
 
-    for (let i = 0; i < playerCount; i++) {
-      const isCpu = i >= humanCount;
-      const config = PLAYER_CONFIGS[i % PLAYER_CONFIGS.length];
-      players.push({
-        id: `player-${i + 1}`,
-        name: isCpu
-          ? config.name.replace(' (あなた)', ' (CPU)')
-          : i === 0
-          ? 'プレイヤー1 (あなた)'
-          : `プレイヤー${i + 1}`,
-        isCpu,
-        colorBadge: config.colorBadge,
-        resources: { WOOD: 0, RICE: 0, IRON: 0 },
-        locationCards: [...ALL_LOCATIONS], // 「森」「畑」「鉱山」
-        eventCards: getRandomEvents(),     // イベントカード
-        selectedCard: null,
-        lastGainedResources: { WOOD: 0, RICE: 0, IRON: 0 },
-      });
-    }
+      const startLog: ActionLog = {
+        id: `log-init-${Date.now()}`,
+        round: 1,
+        message: `🃏 ゲーム開始！全プレイヤーに「森・畑・鉱山」とイベントカードを配布しました。（参加: ${playerCount}人）`,
+        type: 'INFO',
+        timestamp: new Date().toLocaleTimeString(),
+      };
 
-    const startLog: ActionLog = {
-      id: `log-init-${Date.now()}`,
-      round: 1,
-      message: `🃏 ゲーム開始！全プレイヤーに「森・畑・鉱山」とイベントカードを配布しました。（参加: ${playerCount}人）`,
-      type: 'INFO',
-      timestamp: new Date().toLocaleTimeString(),
-    };
-
-    soundManager.playRoundStart();
+      soundManager.playRoundStart();
 
     setState({
       ...DEFAULT_STATE,
