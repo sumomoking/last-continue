@@ -68,20 +68,28 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
   const maxRice = Math.max(...state.players.map((p) => p.resources.RICE), 1);
   const maxIron = Math.max(...state.players.map((p) => p.resources.IRON), 1);
 
-  return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col justify-between min-h-[90vh] p-3 sm:p-5 school-desk-wood rounded-[2rem] sm:rounded-[2.5rem] border-4 border-[#875c2e] shadow-2xl text-stone-900 select-none relative overflow-hidden">
-      {/* Pencil Groove Accent */}
-      <div className="absolute top-2 left-16 right-16 h-1 bg-black/20 rounded-full shadow-inner pointer-events-none" />
+  // イベントカードを出したプレイヤー一覧 (REVEAL_ALL時)
+  const eventPlayers = state.players.filter(
+    (p) =>
+      state.phase === 'REVEAL_ALL' &&
+      p.selectedCard &&
+      GAME_CARDS[p.selectedCard].category === 'EVENT'
+  );
 
-      {/* ── 1. Top Bar: Chalkboard / Notebook Step Guide ── */}
+  return (
+    <div className="w-full max-w-6xl mx-auto flex flex-col justify-between min-h-[92vh] p-3 sm:p-5 school-desk-wood rounded-[2rem] sm:rounded-[2.5rem] border-4 border-[#784d24] shadow-[0_25px_60px_rgba(0,0,0,0.8)] text-stone-900 select-none relative overflow-hidden">
+      {/* Tabletop Wood Surface Grain & Pencil Groove */}
+      <div className="absolute top-2 left-16 right-16 h-1 bg-black/25 rounded-full shadow-inner pointer-events-none" />
+
+      {/* ── 1. Header Board: School Festival Card Match Header ── */}
       <div className="w-full school-chalkboard border-2 border-[#5c3a1e] rounded-2xl p-3 shadow-lg mb-3 text-white relative z-10">
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-emerald-700/60">
           <div className="flex items-center space-x-3">
             <span className="px-3 py-1 rounded-full bg-amber-400 text-stone-950 font-black text-xs sm:text-sm shadow">
-              🏫 放課後 ターン {state.round} / {state.maxRounds}
+              🏫 文化祭・対決 ターン {state.round} / {state.maxRounds}
             </span>
             <span className="text-sm font-bold text-amber-200 hidden sm:inline font-serif">
-              🌲 資源争奪カードゲーム（机の上の対決）
+              🃏 資源争奪カードゲーム（机の上のリアルカード対戦）
             </span>
           </div>
 
@@ -94,7 +102,7 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
           </button>
         </div>
 
-        {/* Step Guide Bar */}
+        {/* Phase Progress Bar */}
         <div className="grid grid-cols-3 gap-2 pt-2 text-center text-xs font-bold">
           <div
             className={`p-1.5 rounded-xl transition ${
@@ -103,7 +111,7 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                 : 'bg-emerald-950/60 text-emerald-400/80'
             }`}
           >
-            ① 手札から1枚伏せて出す
+            ① 手札から1枚伏せて場に出す
           </div>
           <div
             className={`p-1.5 rounded-xl transition ${
@@ -121,16 +129,17 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                 : 'bg-emerald-950/60 text-emerald-400/80'
             }`}
           >
-            ③ 資源獲得・サイコロ勝負
+            ③ 資源カード獲得・サイコロ勝負
           </div>
         </div>
       </div>
 
-      {/* ── 2. Real-time Player Status: Student Desk Sticky Notes ── */}
-      <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3 relative z-10">
+      {/* ── 2. Other Players' Mats (Cards In Play & Collected Resource Cards) ── */}
+      <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3 relative z-10">
         {state.players.map((p, idx) => {
           const isCurrent = state.phase === 'CARD_SELECT' && idx === state.currentSelectingPlayerIndex;
           const hasPlayed = p.selectedCard !== null;
+          const isRevealed = state.phase === 'REVEAL_ALL' && p.selectedCard !== null;
           const setCount = Math.min(p.resources.WOOD, p.resources.RICE, p.resources.IRON);
           
           let majorityPts = 0;
@@ -143,80 +152,136 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
             <div
               key={p.id}
               className={`
-                rounded-2xl p-3 border-2 transition-all flex flex-col justify-between shadow-md relative bg-[#fffdf0] text-stone-900
+                rounded-2xl p-2.5 sm:p-3 border-2 transition-all flex flex-col justify-between shadow-md relative bg-[#faf6ea] text-stone-900
                 ${
                   isCurrent
-                    ? 'border-amber-500 ring-4 ring-amber-400/60 shadow-lg'
-                    : 'border-stone-300/80'
+                    ? 'border-amber-500 ring-4 ring-amber-400/60 shadow-xl'
+                    : 'border-[#c4a47c]'
                 }
               `}
             >
-              {/* Tape Accent */}
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-12 h-3.5 school-tape rounded-sm rotate-1 pointer-events-none" />
-
-              {/* Player Name & Play Status */}
-              <div className="flex items-center justify-between mb-1.5 mt-0.5">
-                <div className="font-black text-xs sm:text-sm text-stone-800 truncate">
-                  {p.name}
-                </div>
-                {state.phase === 'CARD_SELECT' && (
-                  <span
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                      hasPlayed
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                        : isCurrent
-                        ? 'bg-amber-200 text-amber-900 border border-amber-400 animate-pulse'
-                        : 'bg-stone-200 text-stone-600'
-                    }`}
-                  >
-                    {hasPlayed ? '✓ 出した' : isCurrent ? '▶ 選択中' : '待機'}
+              {/* Player Name Tag Tape */}
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center space-x-1.5 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                  <span className="font-black text-xs sm:text-sm text-stone-800 truncate">
+                    {p.name}
                   </span>
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300 font-bold text-amber-900">
+                  計 {currentTotalPts}P
+                </span>
+              </div>
+
+              {/* Played Card Slot (Physical Card Face-down or Face-up) */}
+              <div className="my-1.5 p-2 rounded-xl bg-[#ede2cf] border border-[#cfbca1] flex flex-col items-center justify-center min-h-[95px]">
+                <div className="text-[10px] font-bold text-stone-600 mb-1">
+                  出したカード:
+                </div>
+                {isRevealed && p.selectedCard ? (
+                  <div className="animate-scale-in">
+                    <ResourceCard cardType={p.selectedCard} size="sm" />
+                  </div>
+                ) : hasPlayed ? (
+                  <div className="animate-fade-in">
+                    <ResourceCard cardType="FOREST" isFaceDown size="sm" />
+                  </div>
+                ) : (
+                  <div className="w-20 h-28 border-2 border-dashed border-stone-400/70 rounded-xl flex flex-col items-center justify-center text-stone-500 text-[10px] text-center p-1 font-bold">
+                    {isCurrent ? (
+                      <span className="text-amber-700 font-black animate-pulse">
+                        🎴 選択中...
+                      </span>
+                    ) : (
+                      <span>待機中</span>
+                    )}
+                  </div>
                 )}
               </div>
 
-              {/* Resources Inventory */}
-              <div className="grid grid-cols-3 gap-1 my-1 text-center font-mono">
-                <div className="p-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
-                  <div className="text-[10px] text-stone-500 font-sans font-bold">木</div>
-                  <div className="font-black text-sm">{p.resources.WOOD}</div>
+              {/* Collected Physical Resource Cards Display (Mini Cards Stack) */}
+              <div className="pt-1.5 border-t border-stone-300/80">
+                <div className="text-[10px] font-bold text-stone-600 mb-1 flex items-center justify-between">
+                  <span>獲得した資源カード:</span>
+                  <span className="text-amber-800 font-mono text-[10px]">
+                    {setCount > 0 ? `★ ${setCount}セット組` : ''}
+                  </span>
                 </div>
-                <div className="p-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
-                  <div className="text-[10px] text-stone-500 font-sans font-bold">小麦</div>
-                  <div className="font-black text-sm">{p.resources.RICE}</div>
-                </div>
-                <div className="p-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800">
-                  <div className="text-[10px] text-stone-500 font-sans font-bold">鉄</div>
-                  <div className="font-black text-sm">{p.resources.IRON}</div>
-                </div>
-              </div>
 
-              {/* Set & Points Summary */}
-              <div className="pt-1 mt-1 border-t border-stone-200 flex items-center justify-between text-[11px] font-mono">
-                <span className="text-stone-600">セット: <strong className="text-amber-700">{setCount}組({setCount}P)</strong></span>
-                <span className="text-stone-900 font-black">計: {currentTotalPts}P</span>
+                <div className="grid grid-cols-3 gap-1">
+                  {/* Wood Card Stack */}
+                  <div className="flex flex-col items-center">
+                    {p.resources.WOOD > 0 ? (
+                      <ResourceCard
+                        cardType="RES_WOOD"
+                        size="micro"
+                        count={p.resources.WOOD}
+                      />
+                    ) : (
+                      <div className="w-10 h-14 rounded-md border border-dashed border-stone-300 bg-stone-100 flex flex-col items-center justify-center text-[9px] text-stone-400">
+                        <span>🪵</span>
+                        <span>0</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Wheat Card Stack */}
+                  <div className="flex flex-col items-center">
+                    {p.resources.RICE > 0 ? (
+                      <ResourceCard
+                        cardType="RES_RICE"
+                        size="micro"
+                        count={p.resources.RICE}
+                      />
+                    ) : (
+                      <div className="w-10 h-14 rounded-md border border-dashed border-stone-300 bg-stone-100 flex flex-col items-center justify-center text-[9px] text-stone-400">
+                        <span>🌾</span>
+                        <span>0</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Iron Card Stack */}
+                  <div className="flex flex-col items-center">
+                    {p.resources.IRON > 0 ? (
+                      <ResourceCard
+                        cardType="RES_IRON"
+                        size="micro"
+                        count={p.resources.IRON}
+                      />
+                    ) : (
+                      <div className="w-10 h-14 rounded-md border border-dashed border-stone-300 bg-stone-100 flex flex-col items-center justify-center text-[9px] text-stone-400">
+                        <span>⚙️</span>
+                        <span>0</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* ── 3. Center Battle Ground: Classroom Desk Mat ── */}
-      <div className="w-full bg-[#1b3d2b] border-2 border-[#12281c] rounded-3xl p-4 sm:p-5 shadow-inner my-2 text-white relative z-10">
+      {/* ── 3. Center Tabletop Battle Mat: Resource Decks & Location Drop Zones ── */}
+      <div className="w-full bg-[#1b3d2b] border-4 border-[#12281c] rounded-3xl p-3.5 sm:p-5 shadow-[inset_0_4px_20px_rgba(0,0,0,0.8)] my-2 text-white relative z-10">
         <div className="text-center mb-3">
           <h3 className="text-sm sm:text-base font-black text-amber-200 flex items-center justify-center gap-2">
-            <span>🏫 机の中央（3つの資源獲得エリア）</span>
+            <span>🏫 机の中央：3つの資源カード置き場 ＆ 出されたカード</span>
           </h3>
           <p className="text-xs text-emerald-200/80">
-            出されたカードが集まる場所です。被ったら「戦（戦闘）」になり、サイコロ勝者が2個総取り！
+            単独なら中央の山札から資源カードを1枚獲得！被ったらサイコロ勝者が2枚総取り！
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        {/* 3 Location Zones & Supply Decks */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {ALL_LOCATIONS.map((loc) => {
             const card = GAME_CARDS[loc];
-            const targetRes = RESOURCE_MAP[card.targetResource!];
+            const targetResKey = card.targetResource!;
+            const targetRes = RESOURCE_MAP[targetResKey];
 
-            // 公開フェーズでこの場所を選んだプレイヤーたち
+            // Players who played this location card in REVEAL_ALL
             const playersHere = state.players.filter(
               (p) => state.phase === 'REVEAL_ALL' && p.selectedCard === loc
             );
@@ -227,118 +292,171 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
               <div
                 key={loc}
                 className={`
-                  rounded-2xl p-4 border-2 flex flex-col justify-between transition-all duration-300 min-h-[160px]
+                  rounded-2xl p-3.5 border-2 flex flex-col justify-between transition-all duration-300 relative overflow-hidden
                   ${
                     isConflict
-                      ? 'bg-red-950/80 border-red-400 ring-2 ring-red-400/50 shadow-lg'
+                      ? 'bg-gradient-to-b from-red-950/90 to-red-900/80 border-red-400 ring-4 ring-red-400/50 shadow-2xl'
                       : isSolo
-                      ? 'bg-emerald-900/80 border-emerald-400 shadow-md'
-                      : 'bg-emerald-950/60 border-emerald-800/80'
+                      ? 'bg-gradient-to-b from-emerald-950/90 to-teal-900/80 border-emerald-400 ring-2 ring-emerald-400/40 shadow-xl'
+                      : 'bg-emerald-950/80 border-emerald-800/80'
                   }
                 `}
               >
-                {/* Zone Header */}
-                <div className="flex items-center justify-between pb-2 border-b border-emerald-800">
+                {/* Zone Title & Target Resource Deck */}
+                <div className="flex items-center justify-between pb-2 border-b border-emerald-700/60">
                   <div className="flex items-center space-x-1.5">
-                    <span className="text-xl">{card.icon}</span>
-                    <span className="font-black text-sm text-white">【{card.name}】</span>
+                    <span className="text-2xl">{card.icon}</span>
+                    <span className="font-black text-sm text-white">
+                      【{card.name}】エリア
+                    </span>
                   </div>
-                  <span
-                    className={`px-2 py-0.5 rounded text-xs font-bold border ${targetRes.bgBadge} ${targetRes.textBadge} ${targetRes.borderBadge}`}
-                  >
-                    獲得: {targetRes.icon} {targetRes.name}
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-900 text-emerald-200 border border-emerald-600">
+                    獲得: {targetRes.name}カード
                   </span>
                 </div>
 
-                {/* Cards Placed Here */}
-                <div className="my-3 flex flex-col items-center justify-center text-center">
-                  {state.phase === 'REVEAL_ALL' ? (
-                    <div>
-                      {isConflict && (
-                        <div>
-                          <div className="px-2.5 py-1 rounded-full bg-red-600/30 border border-red-500 text-red-300 font-bold text-xs animate-bounce mb-2">
-                            ⚔️ 被り発生！({playersHere.length}人が鉢合わせ)
-                          </div>
-                          <div className="flex flex-wrap justify-center gap-1.5">
-                            {playersHere.map((p) => (
-                              <span
-                                key={p.id}
-                                className="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-bold text-white shadow"
-                              >
-                                {p.name}
-                              </span>
-                            ))}
-                          </div>
-                          <div className="text-[11px] text-amber-300 mt-2 font-bold">
-                            ➔ サイコロ勝負で勝者が【{targetRes.name}】を2つ獲得！
-                          </div>
-                        </div>
-                      )}
-
-                      {isSolo && (
-                        <div>
-                          <div className="px-2.5 py-1 rounded-full bg-emerald-600/30 border border-emerald-500 text-emerald-300 font-bold text-xs mb-2">
-                            🌿 単独獲得！
-                          </div>
-                          <div className="text-xs font-bold text-white">
-                            {playersHere[0].name}
-                          </div>
-                          <div className="text-[11px] text-emerald-300 mt-1 font-bold">
-                            ➔ 安全に【{targetRes.name}】を1つ獲得
-                          </div>
-                        </div>
-                      )}
-
-                      {!isConflict && !isSolo && (
-                        <div className="text-xs text-slate-500 font-mono">
-                          誰も選んでいません
-                        </div>
-                      )}
+                {/* Central Visual: Resource Supply Card Stack & Played Cards */}
+                <div className="my-3 flex items-center justify-around gap-2 min-h-[120px]">
+                  {/* 1. The Central Resource Supply Card */}
+                  <div className="flex flex-col items-center">
+                    <div className="text-[10px] font-bold text-amber-300 mb-1">
+                      場の資源山札
                     </div>
-                  ) : (
-                    <div className="text-xs text-slate-400">
-                      {state.phase === 'CARD_SELECT'
-                        ? '🎴 各プレイヤーがカードを伏せています…'
-                        : '待機中'}
+                    <div className="relative">
+                      {/* Stack effect shadows */}
+                      <div className="absolute top-1 left-1 w-full h-full rounded-xl bg-black/40 -z-10" />
+                      <ResourceCard
+                        cardType={`RES_${targetResKey}`}
+                        size="sm"
+                        showGlow={isSolo || isConflict}
+                      />
                     </div>
-                  )}
+                  </div>
+
+                  {/* Arrow Indicator */}
+                  <div className="text-xl font-bold text-amber-400">➔</div>
+
+                  {/* 2. Played Cards on this zone */}
+                  <div className="flex flex-col items-center flex-1">
+                    <div className="text-[10px] font-bold text-stone-300 mb-1">
+                      出されたカード
+                    </div>
+
+                    {state.phase === 'REVEAL_ALL' ? (
+                      <div className="flex flex-col items-center">
+                        {isConflict && (
+                          <div className="text-center">
+                            <div className="px-2 py-0.5 rounded-full bg-red-600 text-white font-black text-[10px] animate-bounce mb-1">
+                              ⚔️ 被り発生！({playersHere.length}人)
+                            </div>
+                            <div className="flex flex-wrap justify-center gap-1">
+                              {playersHere.map((p) => (
+                                <span
+                                  key={p.id}
+                                  className="px-2 py-0.5 rounded bg-red-950 border border-red-500 text-red-200 font-bold text-[11px]"
+                                >
+                                  {p.name}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="text-[10px] text-amber-300 font-bold mt-1">
+                              サイコロ勝負で2枚総取り！
+                            </div>
+                          </div>
+                        )}
+
+                        {isSolo && (
+                          <div className="text-center">
+                            <div className="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[10px] mb-1">
+                              🌿 単独獲得！
+                            </div>
+                            <div className="text-xs font-bold text-emerald-200">
+                              {playersHere[0].name}
+                            </div>
+                            <div className="text-[10px] text-emerald-300 font-bold mt-1">
+                              1枚安全に獲得
+                            </div>
+                          </div>
+                        )}
+
+                        {!isConflict && !isSolo && (
+                          <div className="text-xs text-emerald-400/50 font-mono py-4">
+                            誰も出していません
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-emerald-300/60 font-mono text-center py-4">
+                        {state.phase === 'CARD_SELECT'
+                          ? '🎴 各自伏せています…'
+                          : '待機中'}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Bottom Helper */}
-                <div className="text-[10px] text-slate-400 text-center pt-2 border-t border-slate-800/80">
-                  単独 ➔ 1つ獲得 / 被り ➔ 戦闘勝者が2つ獲得
+                {/* Bottom Zone Helper */}
+                <div className="text-[10px] text-emerald-300/80 text-center pt-2 border-t border-emerald-800/80 font-mono">
+                  単独 ➔ 1枚獲得 / 被り ➔ 戦闘勝者が2枚獲得
                 </div>
               </div>
             );
           })}
         </div>
 
+        {/* Event Cards Section in Center if any played */}
+        {state.phase === 'REVEAL_ALL' && eventPlayers.length > 0 && (
+          <div className="mt-4 p-3 rounded-2xl bg-purple-950/80 border-2 border-purple-500/80">
+            <div className="text-xs font-black text-purple-200 mb-2 flex items-center gap-1.5">
+              <span>⚡ 発動されたイベントカード:</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {eventPlayers.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-2 p-2 rounded-xl bg-purple-900/60 border border-purple-400"
+                >
+                  <ResourceCard cardType={p.selectedCard!} size="sm" />
+                  <div>
+                    <div className="font-bold text-xs text-white">
+                      {p.name}
+                    </div>
+                    <div className="text-[11px] text-purple-200 mt-0.5">
+                      {GAME_CARDS[p.selectedCard!].description}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Action Button on Reveal All */}
         {state.phase === 'REVEAL_ALL' && (
-          <div className="mt-4 pt-3 border-t border-slate-800 text-center">
+          <div className="mt-4 pt-3 border-t border-emerald-800 text-center">
             <button
               type="button"
               onClick={() => {
                 soundManager.playButtonClick();
                 onResolveReveals();
               }}
-              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-amber-600 to-red-600 hover:from-red-500 hover:to-amber-500 text-white font-black text-base shadow-[0_0_25px_rgba(239,68,68,0.5)] transition transform hover:scale-105 active:scale-95 cursor-pointer"
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-amber-600 to-red-600 hover:from-red-500 hover:to-amber-500 text-white font-black text-base shadow-[0_0_25px_rgba(239,68,68,0.6)] transition transform hover:scale-105 active:scale-95 cursor-pointer"
             >
-              🎲 判定を実行（サイコロ戦闘＆資源獲得へ）➔
+              🎲 判定を実行（サイコロ勝負＆資源カード獲得）➔
             </button>
           </div>
         )}
       </div>
 
-      {/* ── 4. Bottom Player Controls: Your Hand on the Wooden Desk ── */}
-      <div className="w-full bg-[#fdfbf7] border-2 border-[#b58c58] rounded-3xl p-4 sm:p-5 shadow-xl mt-2 text-stone-900 relative z-10">
+      {/* ── 4. Bottom Player Controls: Your Hand on the Table ── */}
+      <div className="w-full bg-[#faf6ea] border-3 border-[#9c6f3b] rounded-3xl p-4 sm:p-5 shadow-2xl mt-2 text-stone-900 relative z-10">
         {state.phase === 'ROUND_START' && (
           <div className="text-center py-4">
-            <h3 className="text-xl sm:text-2xl font-black text-amber-900 mb-2 font-serif">
+            <h3 className="text-xl sm:text-2xl font-black text-amber-950 mb-2 font-serif">
               第 {state.round} ターン開始
             </h3>
-            <p className="text-xs sm:text-sm text-stone-600 mb-5">
-              手札から「森」「畑」「鉱山」またはイベントカードから1枚を選んで裏向きで場に出します。
+            <p className="text-xs sm:text-sm text-stone-700 mb-5">
+              手札のカード（「森」「畑」「鉱山」「イベント」）から1枚を選んで、裏向き（伏せ札）で場に出します。
             </p>
             <button
               type="button"
@@ -346,27 +464,29 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                 soundManager.playButtonClick();
                 onStartCardSelection();
               }}
-              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 text-stone-950 font-black text-base shadow-lg transition transform hover:scale-105 active:scale-95 cursor-pointer"
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 text-stone-950 font-black text-base shadow-xl transition transform hover:scale-105 active:scale-95 cursor-pointer"
             >
-              🃏 手札からカードを出す（選択開始）
+              🃏 手札からカードを場に出す（選択開始）➔
             </button>
           </div>
         )}
 
         {state.phase === 'CARD_SELECT' && curPlayer && (
           <div className="flex flex-col items-center">
-            {/* Header prompt */}
-            <div className="w-full flex items-center justify-between mb-3 pb-2 border-b border-stone-200">
+            {/* Header Hand Banner */}
+            <div className="w-full flex items-center justify-between mb-3 pb-2 border-b border-stone-300">
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold text-amber-800">▶ 出すプレイヤー:</span>
-                <span className="font-black text-sm sm:text-base text-stone-900">{curPlayer.name}</span>
+                <span className="text-xs font-bold text-amber-900">▶ 出すプレイヤー:</span>
+                <span className="font-black text-sm sm:text-base text-stone-950 bg-amber-200 px-2.5 py-0.5 rounded-lg border border-amber-400">
+                  {curPlayer.name}
+                </span>
               </div>
-              <div className="text-xs font-bold text-amber-800">
-                出したいカードを1枚クリックしてください 👇
+              <div className="text-xs font-bold text-amber-900">
+                出したいカードをクリックして選んでください 👇
               </div>
             </div>
 
-            {/* Hand Cards List */}
+            {/* Hand Cards Fan (Physical Cards Display) */}
             <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 my-2">
               {/* Location Cards */}
               {curPlayer.locationCards.map((loc) => (
@@ -393,14 +513,14 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
 
             {/* Event Targeting Controls (if needed) */}
             {selectedCard && GAME_CARDS[selectedCard].category === 'EVENT' && (
-              <div className="w-full max-w-md p-3 rounded-2xl bg-purple-50 border border-purple-300 my-3 text-left">
-                <div className="text-xs font-bold text-purple-900 mb-2">
+              <div className="w-full max-w-md p-3 rounded-2xl bg-purple-100 border-2 border-purple-400 my-3 text-left">
+                <div className="text-xs font-bold text-purple-950 mb-2">
                   ⚡ イベントカードの対象指定:
                 </div>
 
                 {(selectedCard === 'STEAL_RESOURCE' || selectedCard === 'CHALLENGE') && (
                   <div className="mb-2">
-                    <label className="block text-[11px] text-stone-700 mb-1">
+                    <label className="block text-[11px] font-bold text-stone-800 mb-1">
                       対象プレイヤーを選択:
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -409,10 +529,10 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                           key={opp.id}
                           type="button"
                           onClick={() => setTargetOpponentId(opp.id)}
-                          className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                             targetOpponentId === opp.id
-                              ? 'bg-purple-600 text-white shadow'
-                              : 'bg-stone-200 text-stone-700 hover:bg-stone-300'
+                              ? 'bg-purple-700 text-white shadow-md'
+                              : 'bg-white text-stone-700 border border-stone-300 hover:bg-stone-100'
                           }`}
                         >
                           {opp.name}
@@ -424,8 +544,8 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
 
                 {selectedCard === 'STEAL_RESOURCE' && (
                   <div>
-                    <label className="block text-[11px] text-stone-700 mb-1">
-                      奪う資源を選択:
+                    <label className="block text-[11px] font-bold text-stone-800 mb-1">
+                      奪う資源カードを選択:
                     </label>
                     <div className="flex gap-2">
                       {(['WOOD', 'RICE', 'IRON'] as ResourceType[]).map((res) => {
@@ -435,10 +555,10 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                             key={res}
                             type="button"
                             onClick={() => setTargetResource(res)}
-                            className={`flex-1 py-1 px-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                               targetResource === res
-                                ? 'bg-amber-400 text-stone-950 ring-2 ring-amber-600'
-                                : 'bg-stone-200 text-stone-700 hover:bg-stone-300'
+                                ? 'bg-amber-400 text-stone-950 ring-2 ring-amber-700 shadow-md'
+                                : 'bg-white text-stone-700 border border-stone-300 hover:bg-stone-100'
                             }`}
                           >
                             {conf.icon} 【{conf.name}】
@@ -460,14 +580,14 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
                 mt-3 px-8 py-3.5 rounded-2xl font-black text-base transition-all transform
                 ${
                   selectedCard
-                    ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 text-stone-950 shadow-[0_4px_15px_rgba(245,158,11,0.5)] hover:scale-105 active:scale-95 cursor-pointer'
+                    ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 text-stone-950 shadow-[0_4px_18px_rgba(245,158,11,0.6)] hover:scale-105 active:scale-95 cursor-pointer'
                     : 'bg-stone-300 text-stone-500 cursor-not-allowed'
                 }
               `}
             >
               {selectedCard
-                ? `【${GAME_CARDS[selectedCard].name}】を裏向きで場に出す ➔`
-                : 'カードを1枚選んでください'}
+                ? `【${GAME_CARDS[selectedCard].name}】を伏せて場に出す ➔`
+                : '手札から出したいカードを選んでください'}
             </button>
           </div>
         )}
@@ -475,3 +595,4 @@ export const ResourceTabletop: React.FC<ResourceTabletopProps> = ({
     </div>
   );
 };
+

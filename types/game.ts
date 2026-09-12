@@ -18,6 +18,7 @@ export interface Player {
   items: ItemType[];
   savedItem: ItemType | null; // SAVEでセットしたアイテム
   isGameOver: boolean;
+  isCpu?: boolean;
 }
 
 export type GamePhase =

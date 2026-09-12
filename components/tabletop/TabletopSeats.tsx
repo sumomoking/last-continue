@@ -148,11 +148,13 @@ export const TabletopSeats: React.FC<TabletopSeatsProps> = ({
                       ${
                         isCurrentTurn
                           ? "bg-amber-400 text-slate-950 ring-2 ring-amber-300"
+                          : player.isCpu
+                          ? "bg-purple-900 text-purple-200 border border-purple-500/60"
                           : "bg-slate-800 text-slate-300 border border-slate-600"
                       }
                     `}
                   >
-                    <span>👤</span>
+                    <span>{player.isCpu ? "🤖" : "👤"}</span>
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-xs font-bold text-slate-100 truncate max-w-[90px] drop-shadow-sm">

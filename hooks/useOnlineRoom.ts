@@ -283,6 +283,65 @@ export function useOnlineRoom() {
     [subscribeToRoom]
   );
 
+  // 2.5 CPUプレイヤーの追加（ホスト専用）
+  const addCpuPlayer = useCallback(async () => {
+    if (!currentRoom || currentRoom.hostId !== myPlayerId) return;
+    if (currentRoom.players.length >= currentRoom.maxPlayers) return;
+
+    const { db } = getFirebaseInstance();
+    if (!db) return;
+
+    const cpuNames = ['アルファ', 'ベータ', 'ガンマ', 'デルタ'];
+    const currentCpuCount = currentRoom.players.filter((p) => p.isCpu).length;
+    const cpuName = cpuNames[currentCpuCount % cpuNames.length] || `${currentCpuCount + 1}`;
+    const cpuId = `cpu_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+    const newCpu: RoomPlayer = {
+      id: cpuId,
+      name: `CPU-${cpuName}`,
+      isHost: false,
+      isCpu: true,
+      joinedAt: Date.now(),
+    };
+
+    const updatedPlayers = [...currentRoom.players, newCpu];
+
+    try {
+      const roomRef = doc(db, 'rooms', currentRoom.id);
+      await updateDoc(roomRef, {
+        players: updatedPlayers,
+        updatedAt: Date.now(),
+      });
+    } catch (err: any) {
+      console.error('Error adding CPU player:', err);
+      setErrorMessage('CPU追加に失敗しました: ' + (err.message || ''));
+    }
+  }, [currentRoom, myPlayerId]);
+
+  // 2.6 CPUプレイヤーの削除（ホスト専用）
+  const removeCpuPlayer = useCallback(
+    async (cpuPlayerId: string) => {
+      if (!currentRoom || currentRoom.hostId !== myPlayerId) return;
+
+      const { db } = getFirebaseInstance();
+      if (!db) return;
+
+      const updatedPlayers = currentRoom.players.filter((p) => p.id !== cpuPlayerId);
+
+      try {
+        const roomRef = doc(db, 'rooms', currentRoom.id);
+        await updateDoc(roomRef, {
+          players: updatedPlayers,
+          updatedAt: Date.now(),
+        });
+      } catch (err: any) {
+        console.error('Error removing CPU player:', err);
+        setErrorMessage('CPU削除に失敗しました: ' + (err.message || ''));
+      }
+    },
+    [currentRoom, myPlayerId]
+  );
+
   // 3. ルームから退出（ゲーム進行中の場合はゲーム強制終了）
   const leaveRoom = useCallback(async () => {
     if (!currentRoom) return;
@@ -402,6 +461,7 @@ export function useOnlineRoom() {
         items: drawn,
         savedItem: null,
         isGameOver: false,
+        isCpu: !!rp.isCpu,
       };
     });
 
@@ -904,6 +964,166 @@ export function useOnlineRoom() {
     [syncGameState]
   );
 
+  const cpuActionTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ── 12. ホストによるCPU自動行動＆フェーズ自動遷移 ──
+  useEffect(() => {
+    if (!currentRoom || currentRoom.status !== 'PLAYING' || !currentRoom.gameState) {
+      if (cpuActionTimerRef.current) {
+        clearTimeout(cpuActionTimerRef.current);
+        cpuActionTimerRef.current = null;
+      }
+      return;
+    }
+
+    const isHost = currentRoom.hostId === myPlayerId;
+    if (!isHost) return;
+
+    const gs = currentRoom.gameState;
+
+    // 前のタイマーをクリア
+    if (cpuActionTimerRef.current) {
+      clearTimeout(cpuActionTimerRef.current);
+      cpuActionTimerRef.current = null;
+    }
+
+    // A. ROUND_START: 演出完了後に自動でターン開始へ進める
+    if (gs.phase === 'ROUND_START') {
+      cpuActionTimerRef.current = setTimeout(() => {
+        confirmRoundStart();
+      }, 2000);
+      return () => {
+        if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+      };
+    }
+
+    // B. CARD_REVEALING: カードめくり演出完了後に自動で結果へ
+    if (gs.phase === 'CARD_REVEALING') {
+      cpuActionTimerRef.current = setTimeout(() => {
+        finishCardReveal();
+      }, 1500);
+      return () => {
+        if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+      };
+    }
+
+    // C. CARD_RESULT: CPUの防御アイテム発動 または 結果確定
+    if (gs.phase === 'CARD_RESULT') {
+      const targetIdx = gs.targetPlayerIndex;
+      const targetPlayer = targetIdx !== null ? gs.players[targetIdx] : null;
+      const card = gs.revealedCard;
+      const effectiveCard = gs.glitchedCard ? (card === 'GOOD' ? 'BAD' : 'GOOD') : card;
+
+      if (targetPlayer?.isCpu && !targetPlayer.isGameOver && effectiveCard === 'BAD') {
+        if (targetPlayer.items.includes('CONTINUE') && !gs.continuedCard) {
+          cpuActionTimerRef.current = setTimeout(() => {
+            useItem('CONTINUE', targetIdx!);
+          }, 800);
+          return () => {
+            if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+          };
+        } else if (targetPlayer.items.includes('GLITCH') && !gs.glitchedCard) {
+          cpuActionTimerRef.current = setTimeout(() => {
+            useItem('GLITCH', targetIdx!);
+          }, 800);
+          return () => {
+            if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+          };
+        }
+      }
+
+      cpuActionTimerRef.current = setTimeout(() => {
+        resolveCard();
+      }, 2200);
+      return () => {
+        if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+      };
+    }
+
+    // D. ROUND_CLEAR: 次ラウンドへ自動移行
+    if (gs.phase === 'ROUND_CLEAR') {
+      cpuActionTimerRef.current = setTimeout(() => {
+        nextRound();
+      }, 2500);
+      return () => {
+        if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+      };
+    }
+
+    // E. TURN_ACTION: 手番がCPUの場合の思考・行動
+    if (gs.phase === 'TURN_ACTION') {
+      const turnIdx = gs.currentTurnPlayerIndex;
+      const turnPlayer = gs.players[turnIdx];
+
+      if (turnPlayer && turnPlayer.isCpu && !turnPlayer.isGameOver) {
+        cpuActionTimerRef.current = setTimeout(() => {
+          // 1. アイテム使用の判断
+          if (turnPlayer.lives < 3 && turnPlayer.items.includes('1UP')) {
+            useItem('1UP', turnIdx);
+            return;
+          }
+          if (
+            turnPlayer.lives === 1 &&
+            turnPlayer.savedItem === null &&
+            turnPlayer.items.includes('SAVE') &&
+            turnPlayer.items.length > 1
+          ) {
+            const itemToSave = turnPlayer.items.find((it) => it !== 'SAVE');
+            if (itemToSave) {
+              useItem('SAVE', turnIdx, { saveItemType: itemToSave });
+              return;
+            }
+          }
+          if (turnPlayer.items.includes('DEBUG') && gs.debugPeekCard === null) {
+            useItem('DEBUG', turnIdx);
+            return;
+          }
+
+          // 2. PLAY対象の決定
+          const aliveOpponentIndices = gs.players
+            .map((p, idx) => ({ p, idx }))
+            .filter(({ p, idx }) => idx !== turnIdx && !p.isGameOver)
+            .map(({ idx }) => idx);
+
+          let chosenTarget = turnIdx; // デフォルトは自分にPLAY
+
+          if (gs.debugPeekCard === 'GOOD') {
+            chosenTarget = turnIdx; // 安全なので自分にPLAY
+          } else if (gs.debugPeekCard === 'BAD') {
+            if (aliveOpponentIndices.length > 0) {
+              // 危険なので相手にPLAY
+              chosenTarget = aliveOpponentIndices[Math.floor(Math.random() * aliveOpponentIndices.length)];
+            }
+          } else {
+            // 山札の残数比率から確率推定
+            const goodCount = gs.initialRoundGoodCount;
+            const badCount = gs.initialRoundBadCount;
+            if (badCount > goodCount && aliveOpponentIndices.length > 0) {
+              chosenTarget = aliveOpponentIndices[Math.floor(Math.random() * aliveOpponentIndices.length)];
+            } else {
+              chosenTarget = turnIdx;
+            }
+          }
+
+          playCard(chosenTarget);
+        }, 1500);
+
+        return () => {
+          if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+        };
+      }
+    }
+  }, [
+    currentRoom,
+    myPlayerId,
+    confirmRoundStart,
+    finishCardReveal,
+    resolveCard,
+    nextRound,
+    useItem,
+    playCard,
+  ]);
+
   // 再戦（ゲームリセット）
   const restartOnlineGame = useCallback(() => {
     if (currentRoom?.hostId === myPlayerId) {
@@ -920,6 +1140,8 @@ export function useOnlineRoom() {
     createRoom,
     joinRoom,
     leaveRoom,
+    addCpuPlayer,
+    removeCpuPlayer,
     startOnlineGame,
     confirmRoundStart,
     playCard,

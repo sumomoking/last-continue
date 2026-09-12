@@ -7,6 +7,7 @@ export interface RoomPlayer {
   name: string;
   isHost: boolean;
   joinedAt: number;
+  isCpu?: boolean;
 }
 
 export interface OnlineRoom {

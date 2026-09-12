@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { soundManager } from '../../lib/sound';
 
+import { ResourceCard } from './ResourceCard';
+
 interface ResourceSetupModalProps {
   onStart: (playerCount: number, humanCount: number) => void;
   onBackToMenu?: () => void;
@@ -22,18 +24,33 @@ export const ResourceSetupModal: React.FC<ResourceSetupModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none">
-      <div className="w-full max-w-lg bg-gradient-to-b from-slate-900 via-[#0d1424] to-[#060a14] border-2 border-amber-500/70 rounded-3xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.9)] text-center relative overflow-hidden">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-amber-500/20 border border-amber-400/40 rounded-full text-xs font-mono font-bold text-amber-300 mb-3 shadow-inner">
-          🃏 資源争奪カードゲーム
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none overflow-y-auto">
+      <div className="w-full max-w-lg bg-gradient-to-b from-[#1c1917] via-[#292524] to-[#12100e] border-4 border-amber-500 rounded-3xl p-5 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.9)] text-center relative overflow-hidden my-auto">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-amber-500/20 border border-amber-400/40 rounded-full text-xs font-mono font-bold text-amber-300 mb-2 shadow-inner">
+          🏫 文化祭 リアルカード対決
         </div>
-        <h2 className="text-2xl sm:text-3xl font-black font-serif text-white tracking-wide mb-2">
-          ゲーム設定
+        <h2 className="text-2xl sm:text-3xl font-black font-serif text-white tracking-wide mb-1">
+          資源争奪カードゲーム
         </h2>
-        <p className="text-xs sm:text-sm text-slate-300 mb-6 leading-relaxed">
-          全プレイヤーに「森」「畑」「鉱山」とイベントカードを配り、<br />
-          場の「木」「小麦」「鉄」を奪い合ってポイントを競います。
+        <p className="text-xs text-stone-300 mb-4 leading-relaxed">
+          手札から「森」「畑」「鉱山」カードを伏せて出し、<br />
+          場の「木」「小麦」「鉄」資源カードを奪い合います！
         </p>
+
+        {/* Card Previews Preview Row */}
+        <div className="flex items-center justify-center gap-2 my-3 p-2.5 rounded-2xl bg-black/40 border border-stone-700">
+          <div className="flex -space-x-2">
+            <ResourceCard cardType="FOREST" size="micro" />
+            <ResourceCard cardType="FIELD" size="micro" />
+            <ResourceCard cardType="MINE" size="micro" />
+          </div>
+          <span className="text-xs font-bold text-amber-300">➔ 獲得 ➔</span>
+          <div className="flex -space-x-2">
+            <ResourceCard cardType="RES_WOOD" size="micro" />
+            <ResourceCard cardType="RES_RICE" size="micro" />
+            <ResourceCard cardType="RES_IRON" size="micro" />
+          </div>
+        </div>
 
         <div className="mb-6 text-left">
           <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-2">

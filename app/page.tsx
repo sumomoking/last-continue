@@ -193,6 +193,8 @@ export default function GamePage() {
           onCreateRoom={onlineEngine.createRoom}
           onJoinRoom={onlineEngine.joinRoom}
           onLeaveRoom={onlineEngine.leaveRoom}
+          onAddCpuPlayer={onlineEngine.addCpuPlayer}
+          onRemoveCpuPlayer={onlineEngine.removeCpuPlayer}
           onStartGame={onlineEngine.startOnlineGame}
           onBackToLocal={() => {
             onlineEngine.leaveRoom();

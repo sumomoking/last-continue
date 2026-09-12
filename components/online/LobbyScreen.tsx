@@ -15,6 +15,8 @@ interface LobbyScreenProps {
   onLeaveRoom: () => void;
   onStartGame: () => void;
   onBackToLocal: () => void;
+  onAddCpuPlayer?: () => Promise<void>;
+  onRemoveCpuPlayer?: (playerId: string) => Promise<void>;
 }
 
 export const LobbyScreen: React.FC<LobbyScreenProps> = ({
@@ -27,6 +29,8 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   onLeaveRoom,
   onStartGame,
   onBackToLocal,
+  onAddCpuPlayer,
+  onRemoveCpuPlayer,
 }) => {
   const [tab, setTab] = useState<'create' | 'join'>('create');
   const [playerName, setPlayerName] = useState('Player');
@@ -37,7 +41,8 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
   const hasConfig = isFirebaseConfigured();
   const isHost = currentRoom?.hostId === myPlayerId;
-  const isFull = currentRoom && currentRoom.players.length >= currentRoom.maxPlayers;
+  const canStart = currentRoom && currentRoom.players.length >= 2;
+  const hasEmptySeats = currentRoom && currentRoom.players.length < currentRoom.maxPlayers;
 
   const handleCopyCode = () => {
     if (currentRoom) {
@@ -158,20 +163,36 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                   <span className="flex items-center gap-1.5">
                     <span>🪑</span> 着席プレイヤー一覧
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-black/40 border border-amber-500/30 text-amber-300 font-mono text-[11px]">
-                    {currentRoom.players.length} / {currentRoom.maxPlayers} 席
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {isHost && hasEmptySeats && onAddCpuPlayer && (
+                      <button
+                        type="button"
+                        onClick={onAddCpuPlayer}
+                        className="px-2.5 py-1 rounded-lg bg-purple-900/80 hover:bg-purple-800 border border-purple-400/60 text-purple-200 font-bold text-[11px] transition shadow flex items-center gap-1 cursor-pointer active:scale-95"
+                      >
+                        <span>🤖</span>
+                        <span>CPUを追加</span>
+                      </button>
+                    )}
+                    <span className="px-2 py-0.5 rounded-full bg-black/40 border border-amber-500/30 text-amber-300 font-mono text-[11px]">
+                      {currentRoom.players.length} / {currentRoom.maxPlayers} 席
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {currentRoom.players.map((p, idx) => {
                     const isMe = p.id === myPlayerId;
+                    const isCpu = !!p.isCpu;
+
                     return (
                       <div
                         key={p.id}
                         className={`p-3.5 rounded-xl border flex items-center justify-between transition duration-200 shadow-md ${
                           isMe
                             ? 'bg-cyan-950/40 border-cyan-400/60 text-white shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+                            : isCpu
+                            ? 'bg-purple-950/40 border-purple-500/50 text-purple-200'
                             : 'bg-[#0f172a]/70 border-slate-700/80 text-slate-200'
                         }`}
                       >
@@ -180,10 +201,12 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                             className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-black text-xs shadow-inner ${
                               isMe
                                 ? 'bg-cyan-600 text-white border border-cyan-300/50'
+                                : isCpu
+                                ? 'bg-purple-800 text-purple-200 border border-purple-500/60'
                                 : 'bg-slate-800 text-slate-300 border border-slate-600'
                             }`}
                           >
-                            P{idx + 1}
+                            {isCpu ? '🤖' : `P${idx + 1}`}
                           </div>
                           <div className="truncate">
                             <div className="font-bold text-sm truncate flex items-center gap-1.5">
@@ -191,6 +214,11 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                               {isMe && (
                                 <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-normal">
                                   あなた
+                                </span>
+                              )}
+                              {isCpu && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold">
+                                  CPU
                                 </span>
                               )}
                             </div>
@@ -203,20 +231,42 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                               👑 ホスト
                             </span>
                           )}
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
+                          {isHost && isCpu && onRemoveCpuPlayer && (
+                            <button
+                              type="button"
+                              onClick={() => onRemoveCpuPlayer(p.id)}
+                              className="px-1.5 py-0.5 rounded bg-red-950/80 hover:bg-red-900 border border-red-500/60 text-red-300 text-[10px] font-bold transition cursor-pointer"
+                              title="CPUを削除"
+                            >
+                              ✕ 削除
+                            </button>
+                          )}
+                          <span className={`w-2.5 h-2.5 rounded-full ${isCpu ? 'bg-purple-400 shadow-[0_0_8px_#c084fc]' : 'bg-emerald-400 shadow-[0_0_8px_#34d399]'} animate-pulse`} />
                         </div>
                       </div>
                     );
                   })}
 
-                  {/* Empty Seats */}
+                  {/* Empty Seats with CPU Add Button for Host */}
                   {Array.from({ length: currentRoom.maxPlayers - currentRoom.players.length }).map((_, i) => (
                     <div
                       key={i}
-                      className="p-3.5 rounded-xl border border-dashed border-amber-600/30 bg-black/20 text-amber-200/40 text-xs flex items-center justify-center gap-2 font-medium"
+                      className="p-3.5 rounded-xl border border-dashed border-amber-600/30 bg-black/20 text-amber-200/60 text-xs flex items-center justify-between font-medium"
                     >
-                      <span className="animate-spin text-amber-400/60">⏳</span>
-                      <span>空席（参加待機中...）</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-amber-400/60">🪑</span>
+                        <span>空席（待機中）</span>
+                      </div>
+                      {isHost && onAddCpuPlayer && (
+                        <button
+                          type="button"
+                          onClick={onAddCpuPlayer}
+                          className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold text-[11px] shadow border border-purple-400/50 transition cursor-pointer active:scale-95 flex items-center gap-1"
+                        >
+                          <span>＋</span>
+                          <span>🤖 CPUを追加</span>
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -227,15 +277,15 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 {isHost ? (
                   <button
                     type="button"
-                    disabled={!isFull || isLoading}
+                    disabled={!canStart || isLoading}
                     onClick={onStartGame}
                     className="w-full py-4 bg-gradient-to-r from-red-600 via-rose-500 to-red-600 hover:from-red-500 hover:to-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-lg tracking-wider rounded-2xl shadow-[0_8px_20px_rgba(225,29,72,0.4)] border border-rose-400/40 transform active:scale-98 transition duration-150 cursor-pointer"
                   >
                     {isLoading
                       ? 'ゲーム起動中...'
-                      : isFull
-                      ? '🎲 GAME START (全員揃いました！)'
-                      : `🎲 参加待機中 (${currentRoom.players.length}/${currentRoom.maxPlayers})`}
+                      : canStart
+                      ? `🎲 GAME START (${currentRoom.players.length}/${currentRoom.maxPlayers} 人で開始)`
+                      : `🎲 参加待機中（最低2人必要です）`}
                   </button>
                 ) : (
                   <div className="p-4 bg-black/40 border border-amber-600/30 rounded-2xl text-center text-xs text-amber-200/80 flex items-center justify-center gap-2">
